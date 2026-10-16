@@ -27,12 +27,9 @@ export function AccessForm({ entryId }: { entryId?: string }) {
         <div className="access-heading">
           <p className="eyebrow">CONNECTED PLANS. CLEARER DAYS.</p>
           <h1>
-            Good things
-            <br />
-            start with
-            <br />
-            <em>a plan</em>
-            <span className="access-heading-finish">and El Tequileño.</span>
+            Good things <br />
+            start with <br />a plan and <br />
+            <em>El Tequileño.</em>
           </h1>
           <p>
             One shared calendar for market visits, Casa Salles, Canadian events,
