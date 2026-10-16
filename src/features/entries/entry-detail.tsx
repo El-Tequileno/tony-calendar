@@ -8,7 +8,6 @@ import { formatDay, when } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
 import { api } from "@/lib/api";
 export type Capabilities = {
-  demo: boolean;
   emailSending: boolean;
   uploads: boolean;
 };
@@ -427,7 +426,7 @@ export function EntryDetail({
           </p>
         </article>
         {!capabilities.emailSending && (
-          <div className="demo-note">
+          <div className="service-note">
             Email sending is not enabled. Configure the sender and email
             provider to send real invitations.
           </div>

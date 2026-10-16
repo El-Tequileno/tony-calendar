@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { AccessForm } from "@/features/access/access-form";
 import { currentEmail } from "@/server/session";
-import { demoMode } from "@/server/config";
 export const dynamic = "force-dynamic";
 export default async function Login({
   searchParams,
@@ -18,5 +17,5 @@ export default async function Login({
     email = await currentEmail();
   } catch {}
   if (email) redirect(entryId ? `/?entry=${entryId}` : "/");
-  return <AccessForm demo={demoMode()} entryId={entryId} />;
+  return <AccessForm entryId={entryId} />;
 }

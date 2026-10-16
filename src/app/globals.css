@@ -1375,7 +1375,7 @@ button:disabled:hover {
   justify-content: space-between;
   padding: 14px 17px;
 }
-.demo-note {
+.service-note {
   background: #f7f8ef;
   border: 1px solid #e6e8d8;
   border-radius: 9px;
@@ -1385,10 +1385,10 @@ button:disabled:hover {
   line-height: 1.6;
   margin-top: 24px;
 }
-.demo-note p {
+.service-note p {
   margin: 6px 0 0;
 }
-.demo-note button {
+.service-note button {
   background: transparent;
   border: 0;
   padding: 0;
@@ -1819,5 +1819,170 @@ button:disabled:hover {
   }
   .calendar-event-content small {
     display: none;
+  }
+}
+.people-nav {
+  margin-top: 18px !important;
+  border-top: 1px solid #ffffff14 !important;
+}
+.people-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 22px;
+  align-items: start;
+  margin-bottom: 22px;
+}
+.people-add-card,
+.people-list-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 25px;
+}
+.people-add-card h2,
+.people-list-card h2 {
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 14px 0 10px;
+}
+.people-add-card > p,
+.people-list-card header p {
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.people-add-card form {
+  display: grid;
+  gap: 16px;
+  margin-top: 23px;
+}
+.people-icon {
+  display: grid;
+  place-items: center;
+  background: #edf3e9;
+  color: #7a9878;
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+}
+.owner-pill {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 99px;
+  background: #edf3e9;
+  color: #6f8d71;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.owner-pill.small {
+  padding: 7px 9px;
+  font-size: 9px;
+}
+.people-list-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+  color: #8ca08b;
+}
+.people-list-card h2 {
+  margin-top: 0;
+}
+.people-list-card header p {
+  margin: 0;
+}
+.people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.people-list > li {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.people-list > li:last-child {
+  border: 0;
+  padding-bottom: 0;
+}
+.person-avatar {
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  background: #f0f4eb;
+  color: #839978;
+  display: grid;
+  place-items: center;
+  font-family: Georgia, serif;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.person-avatar.inactive {
+  background: #f3f3ef;
+  color: #adb4a5;
+}
+.person-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.person-info strong {
+  color: var(--ink);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.person-info > span {
+  font-size: 10px;
+  color: #8b9d8a;
+  overflow-wrap: anywhere;
+}
+.person-info > small {
+  font-size: 9px;
+  color: #9fa991;
+}
+.people-list .button {
+  font-size: 9px;
+  min-height: 31px;
+  padding: 8px 10px;
+}
+@media (max-width: 1100px) {
+  .people-grid {
+    grid-template-columns: 1fr;
+  }
+  .people-add-card form {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+  .people-add-card form > .button {
+    grid-column: 1/-1;
+    justify-self: start;
+  }
+}
+@media (max-width: 540px) {
+  .people-add-card,
+  .people-list-card {
+    padding: 19px;
+  }
+  .people-add-card form {
+    grid-template-columns: 1fr;
+  }
+  .people-list > li {
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+  .people-list > li > .button {
+    margin-left: 46px;
+  }
+  .person-info strong {
+    font-size: 11px;
   }
 }

@@ -13,12 +13,13 @@ A shared planning workspace for Tony and Canadian distributors. Built with Next.
 - Arbitrary invitation recipients, email preview, and explicit send action. Informational emails without RSVP.
 - Transactional database saves and revision checks to prevent stale edits.
 - Background refresh every minute while visible and refresh when returning to the tab.
+- Tony-only **People** section to add approved emails and disable or restore calendar access.
 
 ## Access model
 
-Visitors enter an address in `APPROVED_EMAILS`. The server checks that list and issues a signed, HttpOnly, seven-day session cookie. APIs require the session; writes check the request origin. Removing an address from the environment allowlist invalidates it on subsequent requests.
+Visitors enter an address stored as active in Neon's `authorized_emails` table. The server checks the database and issues a signed, HttpOnly, seven-day session cookie. Every protected request rechecks database access; disabling a person blocks their existing session on its next request. Writes check the request origin.
 
-**This is an email allowlist gate, not verified identity.** There is no password or ownership verification: anyone who knows an approved address can enter it. Acknowledgments are self-reported. There are no customer accounts, roles, or change-history interface. All admitted people can view the full calendar and edit entries.
+**This is an email allowlist gate, not verified identity.** There is no password or ownership verification: anyone who knows an approved address can enter it. Acknowledgments are self-reported. All admitted people can view the full calendar and edit entries. Only the database-designated Tony can see People or call its APIs. The form cannot assign Tony's permission, and Tony cannot disable his own access. There are no customer accounts or change-history interface.
 
 ## Requirements
 
@@ -37,34 +38,33 @@ cp .env.example .env.local
 
 On PowerShell, use `Copy-Item .env.example .env.local` if it does not already exist. Edit `.env.local`:
 
-| Variable          | Purpose                                                              |
-| ----------------- | -------------------------------------------------------------------- |
-| `DATABASE_URL`    | Neon connection string; use the dashboard's pooled connection string |
-| `SESSION_SECRET`  | Random secret of at least 32 characters                              |
-| `APPROVED_EMAILS` | Exact approved addresses, separated by commas                        |
-| `APP_URL`         | Exact application origin, initially `http://localhost:3000`          |
-| `RESEND_API_KEY`  | Resend API key; optional until sending is needed                     |
-| `EMAIL_FROM`      | Sender on a verified Resend domain                                   |
-| `DEMO_MODE`       | Set `false` for real shared records                                  |
+| Variable         | Purpose                                                              |
+| ---------------- | -------------------------------------------------------------------- |
+| `DATABASE_URL`   | Neon connection string; use the dashboard's pooled connection string |
+| `SESSION_SECRET` | Random secret of at least 32 characters                              |
+| `APP_URL`        | Exact application origin, initially `http://localhost:3000`          |
+| `RESEND_API_KEY` | Resend API key; optional until sending is needed                     |
+| `EMAIL_FROM`     | Sender on a verified Resend domain                                   |
 
 Then:
 
 ```sh
 npm run db:migrate
+npm run db:setup-access -- "<Tony's exact email>"
 npm run dev
 ```
 
-Open `http://localhost:3000` and enter an approved email. The database starts empty. Run `npm run db:seed` only if you want fictional examples. Existing records are preserved. Restart the server after environment changes if they are not picked up automatically.
+Open `http://localhost:3000` and enter Tony's configured email. Use **People** to add other approved addresses. The database starts with an empty calendar; setup creates only Tony's access record. Setup is safe to repeat for the same owner and refuses to replace an existing owner. Restart the server after environment changes if they are not picked up automatically.
 
-## Demo mode
+## Session signing key
 
-Set `DEMO_MODE=true` in `.env.local`. No database is needed. Use `tony@example.com` or `distributor@example.com`; a configured `APPROVED_EMAILS` overrides these defaults. The UI labels demo mode clearly.
+`SESSION_SECRET` is a private random server key used to sign session cookies and reject tampering. It does not encrypt the cookie or verify email ownership. Generate at least 32 random bytes, for example `node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"`, and store the result only in private environment configuration.
 
-Demo data lives in the server process, resets on restart, and is not reliable across serverless instances. Real email sends and uploads are disabled. Do not use it for real shared records. Production without a database fails closed unless demo mode is explicitly enabled.
+Keep the key stable across application instances and deploys. Rotating it signs everyone out. The app requires Neon and a configured signing key; it has no demo mode or fallback sample records.
 
 ## Import original tender data privately
 
-The original workbook, generated `tender-data.js`, HTML prototype, ZIP, credentials, and local uploads are excluded from Git. Public examples are fictional.
+The original workbook, generated `tender-data.js`, HTML prototype, ZIP, credentials, and local uploads are excluded from Git.
 
 If you retained the local tender data file from the prototype:
 
@@ -94,16 +94,17 @@ src/components/ui/        Reusable buttons, accessible Radix dialogs
 src/features/access/      Approved-email entry screen
 src/features/calendar/    Calendar shell, FullCalendar, grouped lists
 src/features/entries/     Category forms and entry details
-src/db/                   Drizzle schema, Neon driver, fictional examples
+src/features/people/      Tony's approved-email management
+src/db/                   Drizzle schema and Neon driver
 src/server/               Sessions, repository, email, uploads, API guards
 src/lib/                  Validation, dates, types, constants
-scripts/                  Migration, seed, private import, smoke checks
-scripts/insert-entry.ts   Transactional seed/import helper
+scripts/                  Migrations, owner setup, private tender import
+scripts/insert-entry.ts   Transactional import helper
 drizzle/                  Generated SQL migrations
-tests/                    Domain, session, concurrency tests
+tests/                    Domain, session, and access-control tests
 ```
 
-The database has entries with category-specific values, normalized customer meetings and tender requirements, and separate acknowledgment, attachment, invitation, and rate-limit tables. Repeated rows save atomically. Tender deadlines are dates. Visit start/end dates are inclusive. Timed entries display their recorded time zone; the calendar does not convert them into the viewer's time zone.
+The database has entries with category-specific values, normalized customer meetings and tender requirements, and separate acknowledgment, attachment, invitation, rate-limit, and authorized-email tables. Repeated rows save atomically. Tender deadlines are dates. Visit start/end dates are inclusive. Timed entries display their recorded time zone; the calendar does not convert them into the viewer's time zone.
 
 ## Verification
 
@@ -113,13 +114,13 @@ npm test
 npm run build
 ```
 
-Start an isolated demo server with the example approved emails, then run `npm run test:smoke` for HTTP checks. It creates labelled test entries in demo memory and never sends email. Restart the demo server to clear test data. GitHub Actions runs type checking, unit tests, and a production build.
+GitHub Actions runs type checking, unit tests, and a production build. Unit-test fixtures are confined to tests and are never loaded into the calendar or database.
 
 ## Deploy to Netlify
 
 1. Import the GitHub repository. `netlify.toml` supplies build/output settings. Netlify provisions its Next.js adapter automatically.
-2. Set runtime environment variables in Netlify: real HTTPS `APP_URL`, random session secret, approved emails, database connection, and `DEMO_MODE=false`. Add Resend settings when ready.
-3. Run `npm run db:migrate` against the target database before enabling the deployment. Migrations run explicitly, not during every preview build.
+2. Set runtime environment variables in Netlify: real HTTPS `APP_URL`, random session secret, and database connection. Add Resend settings when ready. Approved people live in Neon, not environment variables.
+3. Run `npm run db:migrate` against the target database before enabling the deployment, then `npm run db:setup-access -- "<Tony's exact email>"` once. If using the already-configured database, its owner and approved people are preserved. Migrations run explicitly, not during every preview build.
 4. Give previews separate Neon branches/databases and environment values. Set each preview's `APP_URL` to its actual origin for write requests. Do not point previews at production data.
 5. Netlify Blobs uses the site's Netlify environment. No separate Neon Functions or custom Edge Functions are required.
 
@@ -127,4 +128,4 @@ A public source repository does not make Neon public. Keep credentials in enviro
 
 ## Current scope
 
-Pricing/promotions, verified account authentication, roles, edit history, RSVP, instant push synchronization, recurring events, and scheduled reminders are outside this first version. Users can create/edit entries; deletion and attachment removal are not exposed yet. The deliberately simple access model is described above.
+Pricing/promotions, verified account authentication, a general role system, edit history, RSVP, instant push synchronization, recurring events, and scheduled reminders are outside this first version. Users can create/edit entries; deletion and attachment removal are not exposed yet. Tony's people-management permission is stored in the database.

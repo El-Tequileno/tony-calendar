@@ -9,10 +9,9 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:smoke": "tsx scripts/smoke.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts",
+    "db:setup-access": "tsx scripts/setup-access.ts",
     "db:import-tenders": "tsx scripts/import-tenders.ts",
     "format": "prettier --write src scripts tests *.ts *.mjs *.json README.md .github/workflows/*.yml"
   },

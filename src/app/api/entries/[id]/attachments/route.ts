@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { protect, endpoint } from "@/server/http";
 import { getEntry, consumeLimit, addAttachment } from "@/server/repository";
-import { demoMode } from "@/server/config";
 import { storeFile, detectFile } from "@/server/storage";
 import { AppError } from "@/server/errors";
 export const runtime = "nodejs";
@@ -13,11 +12,6 @@ export async function POST(
   return endpoint(async () => {
     const email = await protect(request, true);
     await consumeLimit(`upload:${email}`, 20, 60 * 60 * 1000);
-    if (demoMode())
-      throw new AppError(
-        "Certificate uploads require the Neon database. Demo mode does not store files.",
-        503,
-      );
     const id = z
       .string()
       .uuid()

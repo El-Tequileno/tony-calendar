@@ -44,7 +44,7 @@ export function invitationText(entry: Entry, url: string) {
 export async function sendInvitations(entry: Entry, email: string) {
   if (!capabilities().emailSending)
     throw new AppError(
-      "Email sending is not configured. Set RESEND_API_KEY and a verified EMAIL_FROM, and disable demo mode.",
+      "Email sending is not configured. Set RESEND_API_KEY and a verified EMAIL_FROM.",
       503,
     );
   if (!entry.emails.length)

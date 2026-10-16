@@ -8,6 +8,13 @@
       "when": 1792171687886,
       "tag": "0000_warm_ogun",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792172801176,
+      "tag": "0001_nosy_the_leader",
+      "breakpoints": true
     }
   ]
 }

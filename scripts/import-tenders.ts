@@ -1,4 +1,5 @@
-import { loadEnvConfig } from "@next/env";
+import nextEnv from "@next/env";
+const { loadEnvConfig } = nextEnv;
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { z } from "zod";

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { currentEmail } from "@/server/session";
+import { currentPerson } from "@/server/session";
 import { capabilities } from "@/server/config";
 import { Workspace } from "@/features/calendar/workspace";
 export const dynamic = "force-dynamic";
@@ -14,16 +14,17 @@ export default async function Home({
       ? query.entry
       : undefined;
   const accessPath = entryId ? `/login?entry=${entryId}` : "/login";
-  let email: string | null = null;
+  let person: Awaited<ReturnType<typeof currentPerson>> = null;
   try {
-    email = await currentEmail();
+    person = await currentPerson();
   } catch {
     redirect(accessPath);
   }
-  if (!email) redirect(accessPath);
+  if (!person) redirect(accessPath);
   return (
     <Workspace
-      email={email}
+      email={person.email}
+      isTony={person.isTony}
       capabilities={capabilities()}
       initialEntryId={entryId}
     />

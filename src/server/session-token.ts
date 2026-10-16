@@ -8,7 +8,6 @@ export function signSession(email: string, secret: string, now = Date.now()) {
 export function readSession(
   token: string | undefined,
   secret: string,
-  approved: string[],
   now = Date.now(),
 ): string | null {
   if (!token) return null;
@@ -22,8 +21,7 @@ export function readSession(
     const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
     return typeof data.email === "string" &&
       typeof data.expires === "number" &&
-      data.expires > now &&
-      approved.includes(data.email)
+      data.expires > now
       ? data.email
       : null;
   } catch {

@@ -4,13 +4,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Mail } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-export function AccessForm({
-  demo,
-  entryId,
-}: {
-  demo: boolean;
-  entryId?: string;
-}) {
+export function AccessForm({ entryId }: { entryId?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -99,28 +93,6 @@ export function AccessForm({
             {busy ? "Opening workspace…" : "Open calendar"}
             <ArrowRight size={16} />
           </Button>
-          {demo && (
-            <aside className="demo-note">
-              <strong>Demo workspace</strong>
-              <p>
-                Use{" "}
-                <button
-                  type="button"
-                  onClick={() => setEmail("tony@example.com")}
-                >
-                  tony@example.com
-                </button>{" "}
-                or{" "}
-                <button
-                  type="button"
-                  onClick={() => setEmail("distributor@example.com")}
-                >
-                  distributor@example.com
-                </button>
-                . Entries are temporary and reset when the server restarts.
-              </p>
-            </aside>
-          )}
         </form>
       </div>
     </main>

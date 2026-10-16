@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { sampleEntries } from "../src/db/sample-data";
+import { entryFixtures } from "./fixtures";
 import { addDays, inRange, occurrences } from "../src/lib/dates";
 import { emptyEntry, entrySchema } from "../src/lib/validation";
 import { readSession, signSession } from "../src/server/session-token";
 describe("calendar dates", () => {
   it("projects exactly two tender dates linked to one record, without filling the days in between", () => {
-    const tender = sampleEntries().find((e) => e.type === "tender")!;
+    const tender = entryFixtures().find((e) => e.type === "tender")!;
     const dates = occurrences([tender]);
     expect(dates).toHaveLength(2);
     expect(dates.map((e) => e.entryId)).toEqual([tender.id, tender.id]);
@@ -17,7 +17,7 @@ describe("calendar dates", () => {
   });
   it("includes visits spanning the entire visible month and handles leap years", () => {
     const visit = {
-      ...sampleEntries()[0],
+      ...entryFixtures()[0],
       startDate: "2026-09-20",
       endDate: "2026-11-10",
     };
@@ -27,14 +27,14 @@ describe("calendar dates", () => {
 });
 describe("entry validation", () => {
   it("accepts the four categories and preserves repeated customer groups", () => {
-    for (const entry of sampleEntries())
+    for (const entry of entryFixtures())
       expect(entrySchema.safeParse(entry).success).toBe(true);
-    const market = entrySchema.parse(sampleEntries()[0]);
+    const market = entrySchema.parse(entryFixtures()[0]);
     expect(market.customers).toHaveLength(2);
-    expect(market.customers[1].location).toBe("Example restaurant office");
+    expect(market.customers[1].location).toBe("Second venue");
   });
   it("rejects impossible dates, reversed deadlines, unsafe agenda links and invalid recipient addresses", () => {
-    const tender = sampleEntries().find((e) => e.type === "tender")!;
+    const tender = entryFixtures().find((e) => e.type === "tender")!;
     expect(
       entrySchema.safeParse({ ...tender, preSubmissionDeadline: "2026-02-30" })
         .success,
@@ -45,19 +45,19 @@ describe("entry validation", () => {
     ).toBe(false);
     expect(
       entrySchema.safeParse({
-        ...sampleEntries()[1],
+        ...entryFixtures()[1],
         agenda: "javascript:alert(1)",
       }).success,
     ).toBe(false);
     expect(
-      entrySchema.safeParse({ ...sampleEntries()[0], emails: ["invalid"] })
+      entrySchema.safeParse({ ...entryFixtures()[0], emails: ["invalid"] })
         .success,
     ).toBe(false);
   });
   it("requires a name for every customer and supports an empty optional customer on a Casa Salles visit", () => {
     expect(
       entrySchema.safeParse({
-        ...sampleEntries()[0],
+        ...entryFixtures()[0],
         customers: [{ name: "", purpose: "Review", location: "Venue" }],
       }).success,
     ).toBe(false);
@@ -73,14 +73,14 @@ describe("email-gate sessions", () => {
   const secret = "a".repeat(40),
     email = "tony@example.com",
     now = 1000000;
-  it("accepts a valid signature only while the email remains approved", () => {
+  it("reads the identity from a valid signature for the database access check", () => {
     const token = signSession(email, secret, now);
-    expect(readSession(token, secret, [email], now)).toBe(email);
-    expect(readSession(token, secret, [], now)).toBeNull();
+    expect(readSession(token, secret, now)).toBe(email);
   });
   it("rejects tampered and expired sessions", () => {
     const token = signSession(email, secret, now);
-    expect(readSession(`${token}x`, secret, [email], now)).toBeNull();
-    expect(readSession(token, secret, [email], now + 8 * 86400000)).toBeNull();
+    expect(readSession(`${token}x`, secret, now)).toBeNull();
+    expect(readSession(token, secret, now + 8 * 86400000)).toBeNull();
+    expect(readSession(token, "b".repeat(40), now)).toBeNull();
   });
 });

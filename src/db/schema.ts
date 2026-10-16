@@ -7,8 +7,37 @@ import {
   jsonb,
   primaryKey,
   index,
+  boolean,
+  uniqueIndex,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import type { EntryInput } from "../lib/validation";
+export const authorizedEmails = pgTable(
+  "authorized_emails",
+  {
+    email: text("email").primaryKey(),
+    name: text("name").notNull().default(""),
+    isTony: boolean("is_tony").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("authorized_emails_single_tony")
+      .on(table.isTony)
+      .where(sql`${table.isTony} = true`),
+    check(
+      "authorized_emails_normalized",
+      sql`${table.email} = lower(btrim(${table.email}))`,
+    ),
+    check(
+      "authorized_emails_tony_active",
+      sql`not ${table.isTony} or ${table.active}`,
+    ),
+  ],
+);
 export const entries = pgTable(
   "entries",
   {

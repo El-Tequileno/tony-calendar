@@ -1,8 +1,9 @@
 import { cookies } from "next/headers";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { approvedEmails, capabilities, sessionSecret } from "@/server/config";
-import { currentEmail, SESSION_COOKIE } from "@/server/session";
+import { capabilities, sessionSecret } from "@/server/config";
+import { currentPerson, SESSION_COOKIE } from "@/server/session";
+import { findAuthorizedPerson } from "@/server/people";
 import { signSession } from "@/server/session-token";
 import { consumeLimit } from "@/server/repository";
 import { endpoint, jsonBody, sameOrigin } from "@/server/http";
@@ -10,7 +11,7 @@ import { AppError } from "@/server/errors";
 export const runtime = "nodejs";
 export async function GET() {
   return endpoint(async () => ({
-    email: await currentEmail(),
+    person: await currentPerson(),
     ...capabilities(),
   }));
 }
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
       30,
       15 * 60 * 1000,
     );
-    if (!approvedEmails().includes(email))
+    const person = await findAuthorizedPerson(email);
+    if (!person)
       throw new AppError("This email is not on the approved access list.", 403);
     (await cookies()).set(SESSION_COOKIE, signSession(email, sessionSecret()), {
       httpOnly: true,
@@ -38,7 +40,7 @@ export async function POST(request: Request) {
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
     });
-    return { email, ...capabilities() };
+    return { person, ...capabilities() };
   });
 }
 export async function DELETE(request: Request) {

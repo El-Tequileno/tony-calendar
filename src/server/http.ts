@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { currentEmail } from "./session";
+import { currentEmail, currentPerson } from "./session";
 import { AppError } from "./errors";
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -19,6 +19,17 @@ export async function protect(request: Request, mutating = false) {
       401,
     );
   return email;
+}
+export async function protectTony(request: Request, mutating = false) {
+  if (mutating) sameOrigin(request);
+  const person = await currentPerson();
+  if (!person)
+    throw new AppError(
+      "Your session ended. Please enter your approved email again.",
+      401,
+    );
+  if (!person.isTony) throw new AppError("Only Tony can manage people.", 403);
+  return person;
 }
 export async function jsonBody(request: Request) {
   const raw = await request.text();

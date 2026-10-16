@@ -2,25 +2,10 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import * as tables from "../db/schema";
-import { sampleEntries } from "../db/sample-data";
 import type { Attachment, Entry, EntryInput } from "../lib/validation";
-import { demoMode } from "./config";
 import { AppError } from "./errors";
 
-type DemoState = {
-  entries: Entry[];
-  rates: Map<string, { hits: number; expires: number }>;
-};
-const globalState = globalThis as typeof globalThis & { tonyDemo?: DemoState };
-function demo() {
-  return (globalState.tonyDemo ??= {
-    entries: sampleEntries(new Date().getFullYear(), new Date().getMonth() + 1),
-    rates: new Map(),
-  });
-}
-
 export async function listEntries(): Promise<Entry[]> {
-  if (demoMode()) return structuredClone(demo().entries);
   const [rows, customers, requirements, acks, files] = await Promise.all([
     db().select().from(tables.entries).orderBy(desc(tables.entries.updatedAt)),
     db()
@@ -69,27 +54,6 @@ export async function saveEntry(
   id?: string,
   revision?: number,
 ): Promise<Entry> {
-  if (demoMode()) {
-    const old = id ? demo().entries.find((e) => e.id === id) : undefined;
-    if (id && !old) throw new AppError("Entry not found.", 404);
-    if (old && old.revision !== revision)
-      throw new AppError(
-        "Someone changed this entry. Reload it before saving again.",
-        409,
-      );
-    const entry = {
-      ...structuredClone(data),
-      id: id || randomUUID(),
-      revision: (old?.revision || 0) + 1,
-      updatedAt: new Date().toISOString(),
-      acknowledgments: old?.acknowledgments || [],
-      attachments: old?.attachments || [],
-    };
-    demo().entries = old
-      ? demo().entries.map((e) => (e.id === id ? entry : e))
-      : [...demo().entries, entry];
-    return structuredClone(entry);
-  }
   const entryId = id || randomUUID();
   const { customers, requirements, ...payload } = data;
   await db().transaction(async (tx) => {
@@ -137,13 +101,6 @@ export async function saveEntry(
 }
 export async function acknowledge(id: string, email: string, checked: boolean) {
   await getEntry(id);
-  if (demoMode()) {
-    const entry = demo().entries.find((e) => e.id === id)!;
-    entry.acknowledgments = checked
-      ? [...new Set([...entry.acknowledgments, email])]
-      : entry.acknowledgments.filter((e) => e !== email);
-    return getEntry(id);
-  }
   if (checked)
     await db()
       .insert(tables.acknowledgments)
@@ -161,17 +118,6 @@ export async function acknowledge(id: string, email: string, checked: boolean) {
   return getEntry(id);
 }
 export async function consumeLimit(key: string, max: number, windowMs: number) {
-  if (demoMode()) {
-    const now = Date.now();
-    for (const [k, v] of demo().rates)
-      if (v.expires <= now) demo().rates.delete(k);
-    const limit = demo().rates.get(key) || { hits: 0, expires: now + windowMs };
-    limit.hits++;
-    demo().rates.set(key, limit);
-    if (limit.hits > max)
-      throw new AppError("Too many requests. Please try again later.", 429);
-    return;
-  }
   const now = new Date(),
     expires = new Date(Date.now() + windowMs);
   const [record] = await db()
@@ -189,7 +135,6 @@ export async function consumeLimit(key: string, max: number, windowMs: number) {
     throw new AppError("Too many requests. Please try again later.", 429);
 }
 export async function beginInvitation(entryId: string, email: string) {
-  if (demoMode()) return randomUUID();
   return db().transaction(async (tx) => {
     await tx
       .select({ id: tables.entries.id })
@@ -222,11 +167,10 @@ export async function finishInvitation(
   status: string,
   providerId?: string,
 ) {
-  if (!demoMode())
-    await db()
-      .update(tables.invitations)
-      .set({ status, providerId })
-      .where(eq(tables.invitations.id, id));
+  await db()
+    .update(tables.invitations)
+    .set({ status, providerId })
+    .where(eq(tables.invitations.id, id));
 }
 export async function addAttachment(
   entryId: string,
