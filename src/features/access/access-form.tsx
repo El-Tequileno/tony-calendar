@@ -31,7 +31,8 @@ export function AccessForm({ entryId }: { entryId?: string }) {
             <br />
             start with
             <br />
-            <em>a plan.</em>
+            <em>a plan</em>
+            <span className="access-heading-finish">and El Tequileño.</span>
           </h1>
           <p>
             One shared calendar for market visits, Casa Salles, Canadian events,
