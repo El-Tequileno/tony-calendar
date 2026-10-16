@@ -1,0 +1,128 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Mail } from "lucide-react";
+import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+export function AccessForm({
+  demo,
+  entryId,
+}: {
+  demo: boolean;
+  entryId?: string;
+}) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <main className="access-page">
+      <div className="access-art">
+        <div className="brand">
+          <span className="brand-mark">
+            T<span>·</span>C
+          </span>
+          <div>
+            Tony Calendar<small>Planning workspace</small>
+          </div>
+        </div>
+        <div className="access-heading">
+          <p className="eyebrow">CONNECTED PLANS. CLEARER DAYS.</p>
+          <h1>
+            Good things
+            <br />
+            start with
+            <br />
+            <em>a plan.</em>
+          </h1>
+          <p>
+            One shared calendar for market visits, Casa Salles, Canadian events,
+            and provincial tender calls.
+          </p>
+        </div>
+        <div className="access-foot">CANADA ↔ TEQUILA</div>
+      </div>
+      <div className="access-main">
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setBusy(true);
+            setError("");
+            try {
+              await api("/api/session", {
+                method: "POST",
+                body: JSON.stringify({ email }),
+              });
+              router.replace(entryId ? `/?entry=${entryId}` : "/");
+              router.refresh();
+            } catch (error) {
+              setError(
+                error instanceof Error
+                  ? error.message
+                  : "Unable to enter the workspace.",
+              );
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <span className="access-icon">
+            <Mail size={25} />
+          </span>
+          <p className="eyebrow">YOUR PLANNING WORKSPACE</p>
+          <h2>
+            Welcome to
+            <br />
+            Tony Calendar.
+          </h2>
+          <p>
+            Enter an email approved for this workspace. No verification code is
+            sent.
+          </p>
+          <label className="field">
+            <span>Approved email</span>
+            <input
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@company.com"
+            />
+          </label>
+          {error && (
+            <p role="alert" className="form-error">
+              {error}
+            </p>
+          )}
+          <Button type="submit" disabled={busy}>
+            {busy ? "Opening workspace…" : "Open calendar"}
+            <ArrowRight size={16} />
+          </Button>
+          {demo && (
+            <aside className="demo-note">
+              <strong>Demo workspace</strong>
+              <p>
+                Use{" "}
+                <button
+                  type="button"
+                  onClick={() => setEmail("tony@example.com")}
+                >
+                  tony@example.com
+                </button>{" "}
+                or{" "}
+                <button
+                  type="button"
+                  onClick={() => setEmail("distributor@example.com")}
+                >
+                  distributor@example.com
+                </button>
+                . Entries are temporary and reset when the server restarts.
+              </p>
+            </aside>
+          )}
+        </form>
+      </div>
+    </main>
+  );
+}

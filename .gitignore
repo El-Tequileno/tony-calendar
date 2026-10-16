@@ -1,0 +1,19 @@
+node_modules/
+.next/
+.netlify/
+coverage/
+test-results/
+playwright-report/
+.env*
+!.env.example
+*.tsbuildinfo
+*.log
+# Original design prototype and supplied business data are kept local.
+/index.html
+/app.js
+/styles.css
+/agenda.html
+/tender-data.js
+/Tony-Calendar-Prototype.zip
+/local-data/
+/artifacts/

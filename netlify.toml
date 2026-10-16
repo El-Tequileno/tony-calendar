@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+[build.environment]
+  NODE_VERSION = "24"
+# Netlify automatically provisions the Next.js adapter and server functions.
+# Set runtime secrets in Netlify's environment-variable settings.
