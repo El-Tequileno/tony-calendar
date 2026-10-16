@@ -78,7 +78,9 @@ The importer parses its JSON array without executing JavaScript, imports the rep
 
 ## Canadian address search
 
-The Canada event form includes an explicit **Search** action using Natural Resources Canada's free [Geolocator API](https://natural-resources.canada.ca/maps-tools-publications/satellite-elevation-air-photos/geolocation-service), with no API key. Select a result to fill the street address, city and province. Check the result and enter the full postal code manually when it is unavailable. Searches run only when requested, are limited per approved email, and public results are cached for one day. `ADDRESS_LOOKUP_URL` can override the service endpoint. Manual entry remains available if lookup fails.
+The Canada event form includes explicit **Search** actions beside **Venue name** and **Address**. Set `GEOAPIFY_API_KEY` in `.env.local` and in the hosting environment to enable [Geoapify](https://www.geoapify.com/) business/place and address search. The key is used only on the server. Search is restricted to Canadian results; the entered city/province helps narrow the query. A venue search uses Address Autocomplete, then the Places API within the entered city if autocomplete finds no venues. Selecting a result fills available venue, street, city, province and full postal-code details. Check the results and complete missing details manually; business coverage and house numbers vary. Geoapify/OpenStreetMap attribution is displayed with results.
+
+Searches run only when requested, are limited to 20 per minute per approved email, and public results are cached for one day. Without a Geoapify key, address search uses Natural Resources Canada's free [Geolocator API](https://natural-resources.canada.ca/maps-tools-publications/satellite-elevation-air-photos/geolocation-service); venue-name search is unavailable. `ADDRESS_LOOKUP_URL` can override this fallback endpoint. Manual entry remains available when a service fails. No database migration is required.
 
 ## Email invitations
 

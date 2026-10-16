@@ -23,6 +23,7 @@ import {
   type EntryInput,
 } from "@/lib/validation";
 import { api } from "@/lib/api";
+import type { AddressResult } from "@/lib/addresses";
 import { calendarToday } from "@/lib/dates";
 import { AddressField } from "./address-field";
 import { DocumentPicker } from "./document-picker";
@@ -63,6 +64,17 @@ export function EntryForm({
     name: "requirements",
   });
   const { register } = form;
+  function selectLocation(result: AddressResult) {
+    for (const name of ["venueName", "address", "city"] as const) {
+      if (result[name])
+        form.setValue(name, result[name], { shouldDirty: true });
+      else if (name === "address")
+        form.setValue(name, "", { shouldDirty: true });
+    }
+    if (result.province)
+      form.setValue("provinces", [result.province], { shouldDirty: true });
+    form.setValue("postalCode", result.postalCode || "", { shouldDirty: true });
+  }
   function closeForm() {
     if (busy) return;
     if (savedEntry && savedEntry !== entry) onSaved(savedEntry);
@@ -359,7 +371,17 @@ export function EntryForm({
                 )}
                 {category === "event" && (
                   <>
-                    {field("venueName", "Venue name", "text", { full: true })}
+                    <AddressField
+                      kind="venue"
+                      value={form.watch("venueName")}
+                      city={form.watch("city")}
+                      province={form.watch("provinces")[0]}
+                      disabled={busy}
+                      onChange={(value) =>
+                        form.setValue("venueName", value, { shouldDirty: true })
+                      }
+                      onSelect={selectLocation}
+                    />
                     <AddressField
                       value={form.watch("address")}
                       city={form.watch("city")}
@@ -368,22 +390,7 @@ export function EntryForm({
                       onChange={(value) =>
                         form.setValue("address", value, { shouldDirty: true })
                       }
-                      onSelect={(result) => {
-                        form.setValue("address", result.address, {
-                          shouldDirty: true,
-                        });
-                        if (result.city)
-                          form.setValue("city", result.city, {
-                            shouldDirty: true,
-                          });
-                        if (result.province)
-                          form.setValue("provinces", [result.province], {
-                            shouldDirty: true,
-                          });
-                        form.setValue("postalCode", result.postalCode || "", {
-                          shouldDirty: true,
-                        });
-                      }}
+                      onSelect={selectLocation}
                     />
                     {field("postalCode", "Postal code", "text", {
                       hint: "Canadian postal code, for example T2P 1J9.",

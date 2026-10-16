@@ -1,10 +1,9 @@
 "use client";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Search, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { PROVINCES } from "@/lib/constants";
-import type { AddressResult } from "@/lib/addresses";
+import type { AddressResult, AddressSearchResponse } from "@/lib/addresses";
 export function AddressField({
   value,
   city,
@@ -12,6 +11,7 @@ export function AddressField({
   disabled,
   onChange,
   onSelect,
+  kind = "address",
 }: {
   value: string;
   city: string;
@@ -19,22 +19,33 @@ export function AddressField({
   disabled: boolean;
   onChange: (value: string) => void;
   onSelect: (result: AddressResult) => void;
+  kind?: "address" | "venue";
 }) {
   const id = useId();
   const requestId = useRef(0);
   const [results, setResults] = useState<AddressResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [message, setMessage] = useState("");
+  const [provider, setProvider] = useState<AddressSearchResponse["provider"]>();
+  const label = kind === "venue" ? "Venue name" : "Address";
+  useEffect(() => {
+    requestId.current++;
+    setSearching(false);
+    setResults([]);
+    setMessage("");
+  }, [value, city, province, kind]);
   return (
     <div className="field full address-field">
-      <label htmlFor={id}>Address</label>
+      <label htmlFor={id}>{label}</label>
       <div className="address-search-row">
         <input
           id={id}
-          autoComplete="street-address"
+          autoComplete={kind === "venue" ? "off" : "street-address"}
           value={value}
           disabled={disabled}
-          placeholder="Street address"
+          placeholder={
+            kind === "venue" ? "Business or venue name" : "Street address"
+          }
           onChange={(event) => {
             requestId.current++;
             setSearching(false);
@@ -45,29 +56,32 @@ export function AddressField({
         />
         <Button
           variant="secondary"
-          disabled={disabled || searching || value.trim().length < 4}
+          aria-label={`Search ${kind === "venue" ? "venues" : "addresses"}`}
+          disabled={disabled || searching || value.trim().length < 3}
           onClick={async () => {
             const current = ++requestId.current;
             setSearching(true);
             setResults([]);
             setMessage("");
             try {
-              const response = await api<{ results: AddressResult[] }>(
+              const response = await api<AddressSearchResponse>(
                 "/api/addresses",
                 {
                   method: "POST",
                   body: JSON.stringify({
-                    query: [value, city, PROVINCES[province]]
-                      .filter(Boolean)
-                      .join(", "),
+                    query: value,
+                    city,
+                    province,
+                    kind,
                   }),
                 },
               );
               if (current !== requestId.current) return;
               setResults(response.results);
+              setProvider(response.provider);
               if (!response.results.length)
                 setMessage(
-                  "No matching street address found. Add the city to your search or enter the details manually.",
+                  "No matches found. Check the name or address and city, or enter the details manually.",
                 );
             } catch (error) {
               if (current === requestId.current)
@@ -86,10 +100,17 @@ export function AddressField({
         </Button>
       </div>
       <small>
-        Search a Canadian street address and city, or enter it manually.
+        {kind === "venue"
+          ? "Search a Canadian business or venue. Set the city above to narrow results."
+          : "Search a Canadian street address, or enter it manually."}
       </small>
       {!!results.length && (
-        <ul className="address-results" aria-label="Matching addresses">
+        <ul
+          className="address-results"
+          aria-label={
+            kind === "venue" ? "Matching venues" : "Matching addresses"
+          }
+        >
           {results.map((result) => (
             <li key={result.id}>
               <button
@@ -99,7 +120,7 @@ export function AddressField({
                   onSelect(result);
                   setResults([]);
                   setMessage(
-                    "Address selected. Check the details and enter the full postal code if needed.",
+                    "Location selected. Check the details and complete any missing information.",
                   );
                 }}
               >
@@ -111,16 +132,41 @@ export function AddressField({
         </ul>
       )}
       {message && <small role="status">{message}</small>}
-      <small className="address-attribution">
-        Address search:{" "}
-        <a
-          href="https://natural-resources.canada.ca/maps-tools-publications/satellite-elevation-air-photos/geolocation-service"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Natural Resources Canada
-        </a>
-      </small>
+      {provider && (
+        <small className="address-attribution">
+          {provider === "geoapify" ? (
+            <>
+              Powered by{" "}
+              <a
+                href="https://www.geoapify.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Geoapify
+              </a>
+              {" · "}©{" "}
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                OpenStreetMap contributors
+              </a>
+            </>
+          ) : (
+            <>
+              Address search:{" "}
+              <a
+                href="https://natural-resources.canada.ca/maps-tools-publications/satellite-elevation-air-photos/geolocation-service"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Natural Resources Canada
+              </a>
+            </>
+          )}
+        </small>
+      )}
     </div>
   );
 }
