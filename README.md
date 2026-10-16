@@ -86,11 +86,13 @@ Save recipient addresses, choose **Invite by email**, review, and select **Send 
 
 Sending has per-email rate limits and a one-minute entry cooldown. Provider requests use an idempotency key. Delivery requests are recorded separately from entry edits. Saving an entry does not send mail.
 
-## Certificate uploads
+## Document and certificate uploads
 
-Save an event, then upload from its details panel. Accepted: PDF, JPEG, PNG, WebP; maximum 4 MB and ten attachments per event. The server checks file signatures. Downloads require a session and are served as attachments.
+Choose files in the Canada event form, then save. Files upload after the event is saved. You can also add more from the details panel. Accepted: PDF, DOCX, XLSX, PPTX, UTF-8 TXT/CSV, JPEG, PNG and WebP; maximum 4 MB per file and ten attachments per event. The server validates file content against the extension with the free `file-type` library, including Office containers. Downloads require a session and are served as attachments. Legacy `.doc`, `.xls`, `.ppt`, macros and arbitrary ZIP/executable files are not accepted.
 
-On Netlify, files live in a site-wide `certificates` Blobs store, with metadata in Neon. Local development uses ignored `local-data/certificates`. Other production hosts need a storage adapter; ephemeral application filesystems are not used in production.
+If an upload fails after saving, the form keeps the saved entry ID and the remaining files. Saving again retries without creating a duplicate event. Closing keeps the saved event. The attachment count is checked inside a transaction to handle simultaneous uploads.
+
+On Netlify, files live in the existing site-wide `certificates` Blobs store, with metadata in Neon. Storage detection recognizes Netlify's runtime Blobs context as well as its deployment flag. No separate upload credentials are needed on Netlify. Local development uses ignored `local-data/certificates`. Other production hosts need a storage adapter; ephemeral application filesystems are not used in production.
 
 ## Project structure
 

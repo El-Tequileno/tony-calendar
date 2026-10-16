@@ -1,3 +1,4 @@
+import { uploadsEnabled } from "./upload-config";
 export function sessionSecret() {
   const secret = process.env.SESSION_SECRET;
   if (secret && secret.length >= 32) return secret;
@@ -8,6 +9,6 @@ export function sessionSecret() {
 export function capabilities() {
   return {
     emailSending: !!process.env.RESEND_API_KEY && !!process.env.EMAIL_FROM,
-    uploads: !!process.env.NETLIFY || process.env.NODE_ENV === "development",
+    uploads: uploadsEnabled(),
   };
 }

@@ -9,6 +9,7 @@ import {
   type EntryInput,
 } from "../lib/validation";
 import { AppError } from "./errors";
+import { MAX_ATTACHMENTS } from "../lib/uploads";
 
 export async function listEntries(): Promise<Entry[]> {
   const [rows, customers, requirements, acks, files] = await Promise.all([
@@ -219,9 +220,21 @@ export async function addAttachment(
   file: Attachment,
   key: string,
 ) {
-  await db()
-    .insert(tables.attachments)
-    .values({ ...file, entryId, key });
+  await db().transaction(async (tx) => {
+    const [entry] = await tx
+      .select({ id: tables.entries.id })
+      .from(tables.entries)
+      .where(eq(tables.entries.id, entryId))
+      .for("update");
+    if (!entry) throw new AppError("Entry not found.", 404);
+    const existing = await tx
+      .select({ id: tables.attachments.id })
+      .from(tables.attachments)
+      .where(eq(tables.attachments.entryId, entryId));
+    if (existing.length >= MAX_ATTACHMENTS)
+      throw new AppError("This event already has ten attachments.");
+    await tx.insert(tables.attachments).values({ ...file, entryId, key });
+  });
   return getEntry(entryId);
 }
 export async function getAttachment(entryId: string, id: string) {

@@ -15,6 +15,12 @@ import { formatDay, when } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
 import { api, RequestError } from "@/lib/api";
 import { invitationBodyHtml, invitationSubject } from "@/lib/invitation";
+import {
+  MAX_ATTACHMENTS,
+  UPLOAD_ACCEPT,
+  UPLOAD_FORMATS,
+  fileSelectionError,
+} from "@/lib/uploads";
 export type Capabilities = {
   emailSending: boolean;
   uploads: boolean;
@@ -244,7 +250,7 @@ export function EntryDetail({
                 <Item label="Special Notes" value={entry.specialNotes} />
               </dl>
             </Group>
-            <Group title="Serving alcohol certificates">
+            <Group title="Documents & alcohol certificates">
               <div className="attachments">
                 {entry.attachments.map((file) => (
                   <a
@@ -261,35 +267,60 @@ export function EntryDetail({
                 ))}
               </div>
               {!entry.attachments.length && (
-                <p className="muted">No certificate uploaded yet.</p>
+                <p className="muted">
+                  No documents or certificates uploaded yet.
+                </p>
               )}
               <label
                 className={`upload-zone ${!capabilities.uploads ? "disabled" : ""}`}
               >
                 <Upload size={18} />
                 <span>
-                  {busy ? "Uploading…" : "Upload certificate / proof"}
-                  <small>PDF, JPEG, PNG, or WebP · maximum 4 MB</small>
+                  {busy ? "Uploading…" : "Upload documents or photos"}
+                  <small>
+                    {UPLOAD_FORMATS} · 4 MB each · {MAX_ATTACHMENTS} files per
+                    event
+                  </small>
                 </span>
                 <input
-                  aria-label="Upload serving alcohol certificate"
+                  aria-label="Upload event documents or certificates"
                   type="file"
-                  accept="application/pdf,image/png,image/jpeg,image/webp"
-                  disabled={busy || !capabilities.uploads}
+                  multiple
+                  accept={UPLOAD_ACCEPT}
+                  disabled={
+                    busy ||
+                    !capabilities.uploads ||
+                    entry.attachments.length >= MAX_ATTACHMENTS
+                  }
                   onChange={async (event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
+                    const files = Array.from(event.target.files || []);
+                    event.target.value = "";
+                    if (!files.length) return;
+                    const message = fileSelectionError(
+                      files,
+                      MAX_ATTACHMENTS - entry.attachments.length,
+                    );
+                    if (message) {
+                      setError(message);
+                      return;
+                    }
                     setError("");
                     setBusy(true);
-                    const data = new FormData();
-                    data.set("file", file);
                     try {
-                      const result = await api<{ entry: Entry }>(
-                        `/api/entries/${entry.id}/attachments`,
-                        { method: "POST", body: data },
+                      for (const file of files) {
+                        const data = new FormData();
+                        data.set("file", file);
+                        const result = await api<{ entry: Entry }>(
+                          `/api/entries/${entry.id}/attachments`,
+                          { method: "POST", body: data },
+                        );
+                        onUpdated(result.entry);
+                      }
+                      onMessage(
+                        files.length === 1
+                          ? "File uploaded."
+                          : "Files uploaded.",
                       );
-                      onUpdated(result.entry);
-                      onMessage("Certificate uploaded.");
                     } catch (error) {
                       setError(
                         error instanceof Error
@@ -298,15 +329,14 @@ export function EntryDetail({
                       );
                     } finally {
                       setBusy(false);
-                      event.target.value = "";
                     }
                   }}
                 />
               </label>
               {!capabilities.uploads && (
                 <p className="field-hint">
-                  File uploads become available when the shared database and
-                  certificate storage are configured.
+                  File uploads are temporarily unavailable. Please try again
+                  later.
                 </p>
               )}
             </Group>

@@ -950,6 +950,43 @@ button:disabled:hover {
   color: #8c9c90;
   margin: 0 0 19px;
 }
+.entry-fields {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.pending-files {
+  list-style: none;
+  margin: 16px 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.pending-files li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 12px;
+}
+.pending-files li > span {
+  flex: 1;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.pending-files small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.pending-files svg {
+  flex-shrink: 0;
+}
 .form-type-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

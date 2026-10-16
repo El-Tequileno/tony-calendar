@@ -532,6 +532,7 @@ export function Workspace({
           type={form.type}
           day={form.day}
           destinations={destinations}
+          uploadsEnabled={capabilities.uploads}
           onClose={() => setForm(null)}
           onSaved={(entry) => {
             update(entry);

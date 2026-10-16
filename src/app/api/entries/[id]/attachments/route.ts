@@ -4,6 +4,7 @@ import { protect, endpoint } from "@/server/http";
 import { getEntry, consumeLimit, addAttachment } from "@/server/repository";
 import { storeFile, detectFile, deleteStoredFile } from "@/server/storage";
 import { AppError } from "@/server/errors";
+import { MAX_ATTACHMENTS, MAX_UPLOAD_BYTES } from "@/lib/uploads";
 export const runtime = "nodejs";
 export async function POST(
   request: Request,
@@ -18,18 +19,18 @@ export async function POST(
       .parse((await params).id);
     const entry = await getEntry(id);
     if (entry.type !== "event")
-      throw new AppError("Certificates belong to Events in Canada.");
-    if (entry.attachments.length >= 10)
+      throw new AppError("Documents belong to Events in Canada.");
+    if (entry.attachments.length >= MAX_ATTACHMENTS)
       throw new AppError("This event already has ten attachments.");
     const length = Number(request.headers.get("content-length"));
-    if (!Number.isFinite(length) || length > 4 * 1024 * 1024 + 65536)
-      throw new AppError("Choose a certificate under 4 MB.", 413);
+    if (!Number.isFinite(length) || length > MAX_UPLOAD_BYTES + 65536)
+      throw new AppError("Choose a file no larger than 4 MB.", 413);
     const form = await request.formData();
     const file = form.get("file");
-    if (!(file instanceof File) || !file.size || file.size > 4 * 1024 * 1024)
-      throw new AppError("Choose a certificate under 4 MB.");
+    if (!(file instanceof File) || !file.size || file.size > MAX_UPLOAD_BYTES)
+      throw new AppError("Choose a non-empty file no larger than 4 MB.");
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const contentType = detectFile(bytes);
+    const contentType = await detectFile(bytes, file.name);
     const fileId = randomUUID();
     await storeFile(fileId, bytes);
     try {

@@ -25,12 +25,14 @@ import {
 import { api } from "@/lib/api";
 import { calendarToday } from "@/lib/dates";
 import { AddressField } from "./address-field";
+import { DocumentPicker } from "./document-picker";
 
 export function EntryForm({
   entry,
   type,
   day,
   destinations,
+  uploadsEnabled,
   onClose,
   onSaved,
 }: {
@@ -38,17 +40,21 @@ export function EntryForm({
   type: Category;
   day: string;
   destinations: string[];
+  uploadsEnabled: boolean;
   onClose: () => void;
   onSaved: (entry: Entry) => void;
 }) {
   const [category, setCategory] = useState(type);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [savedEntry, setSavedEntry] = useState<Entry | undefined>(entry);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [emailText, setEmailText] = useState(entry?.emails.join(", ") || "");
   const today = calendarToday();
   const initialDay = day < today ? today : day;
   const form = useForm<EntryInput>({
-    resolver: zodResolver(entryWriteSchema(entry)) as Resolver<EntryInput>,
+    resolver: zodResolver(entryWriteSchema(savedEntry)) as Resolver<EntryInput>,
     defaultValues: entry || emptyEntry(type, initialDay),
   });
   const customers = useFieldArray({ control: form.control, name: "customers" });
@@ -57,6 +63,11 @@ export function EntryForm({
     name: "requirements",
   });
   const { register } = form;
+  function closeForm() {
+    if (busy) return;
+    if (savedEntry && savedEntry !== entry) onSaved(savedEntry);
+    else onClose();
+  }
   const startDate = form.watch("startDate");
   const preSubmissionDeadline = form.watch("preSubmissionDeadline");
   function minimumDate(name: Path<EntryInput>) {
@@ -119,17 +130,45 @@ export function EntryForm({
       setError("");
       try {
         const result = await api<{ entry: Entry }>(
-          entry ? `/api/entries/${entry.id}` : "/api/entries",
+          savedEntry ? `/api/entries/${savedEntry.id}` : "/api/entries",
           {
-            method: entry ? "PUT" : "POST",
-            body: JSON.stringify({ data, revision: entry?.revision }),
+            method: savedEntry ? "PUT" : "POST",
+            body: JSON.stringify({ data, revision: savedEntry?.revision }),
           },
         );
-        onSaved(result.entry);
+        let updated = result.entry;
+        setSavedEntry(updated);
+        for (let index = 0; index < pendingFiles.length; index++) {
+          const file = pendingFiles[index];
+          setUploadProgress(
+            `Uploading ${index + 1} of ${pendingFiles.length}…`,
+          );
+          const body = new FormData();
+          body.set("file", file);
+          try {
+            const response = await api<{ entry: Entry }>(
+              `/api/entries/${updated.id}/attachments`,
+              { method: "POST", body },
+            );
+            updated = response.entry;
+            // Keep the form's saved revision so a retry cannot overwrite later edits.
+            setSavedEntry({ ...updated, revision: result.entry.revision });
+            setPendingFiles((remaining) =>
+              remaining.filter((item) => item !== file),
+            );
+          } catch (error) {
+            setError(
+              `The event was saved, but ${file.name} could not upload. ${error instanceof Error ? error.message : "Try again."} Save again to retry the remaining files, or close to keep the saved event.`,
+            );
+            return;
+          }
+        }
+        onSaved(updated);
       } catch (error) {
         setError(error instanceof Error ? error.message : "Unable to save.");
       } finally {
         setBusy(false);
+        setUploadProgress("");
       }
     },
     (errors) => {
@@ -145,23 +184,23 @@ export function EntryForm({
   return (
     <Panel
       open
-      onClose={onClose}
+      onClose={closeForm}
       title={
-        entry
+        savedEntry
           ? "Edit calendar entry"
           : category === "tender"
             ? "Create a provincial tender call"
             : "Create a calendar entry"
       }
-      eyebrow={entry ? "EDIT ENTRY" : "NEW ENTRY"}
+      eyebrow={savedEntry ? "EDIT ENTRY" : "NEW ENTRY"}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={busy}>
+          <Button variant="secondary" onClick={closeForm} disabled={busy}>
             Cancel
           </Button>
           <Button type="submit" form="entry-form" disabled={busy}>
             {busy
-              ? "Saving…"
+              ? uploadProgress || "Saving…"
               : category === "tender"
                 ? "Save tender"
                 : "Save entry"}
@@ -178,7 +217,7 @@ export function EntryForm({
         {Object.entries(CATEGORIES).map(([key, info]) => (
           <button
             type="button"
-            disabled={!!entry || busy}
+            disabled={!!savedEntry || busy}
             key={key}
             className={`type-tab ${category === key ? "selected" : ""}`}
             onClick={() => {
@@ -186,6 +225,7 @@ export function EntryForm({
               setCategory(next);
               form.reset(emptyEntry(next, initialDay));
               setEmailText("");
+              setPendingFiles([]);
               setError("");
             }}
           >
@@ -195,322 +235,338 @@ export function EntryForm({
         ))}
       </div>
       <form id="entry-form" onSubmit={submit} noValidate>
-        <section className="form-section">
-          <h3>{category === "tender" ? "Tender details" : "When and who"}</h3>
-          <div className="form-grid">
-            {field(
-              "title",
-              category === "tender" ? "Tender" : "Entry title",
-              "text",
-              { full: true, required: true },
-            )}
-            {category === "tender" ? (
-              <>
-                <label className="field full">
-                  <span>Destination(s) *</span>
-                  <input
-                    list="destination-options"
-                    {...register("destination")}
-                  />
-                  <datalist id="destination-options">
-                    {destinations.map((d) => (
-                      <option key={d} value={d} />
-                    ))}
-                  </datalist>
-                </label>
-                {field("priceRange", "Price Range", "text", { full: true })}
-                {field(
-                  "preSubmissionDeadline",
-                  "Pre-submission Deadline",
-                  "date",
-                  { required: true },
-                )}
-                {field("callBackDeadline", "Call Back Deadline", "date", {
-                  required: true,
-                })}
-              </>
-            ) : (
-              <>
-                {field("startDate", "Start date", "date", { required: true })}
-                {field("endDate", "End date", "date", { required: true })}
-                {category !== "distillery" && (
-                  <>
-                    {field("startTime", "Start time", "time")}
-                    {field("endTime", "End time", "time")}
-                    {select(
-                      "timeZone",
-                      "Meeting / event time zone",
-                      Object.fromEntries(
-                        TIMEZONES.map((t) => [t, t.replaceAll("_", " ")]),
-                      ),
-                    )}
-                  </>
-                )}
-                {field("distributor", "Responsible distributor")}
-                {category !== "distillery" &&
-                  select(
-                    "status",
-                    "Status",
-                    Object.fromEntries(
-                      ["Draft", "Confirmed", "Completed", "Cancelled"].map(
-                        (s) => [s, s],
-                      ),
-                    ),
-                  )}
-              </>
-            )}
-          </div>
-        </section>
-        {category !== "tender" && (
+        <fieldset className="entry-fields" disabled={busy}>
           <section className="form-section">
-            <h3>{CATEGORIES[category].singular} details</h3>
+            <h3>{category === "tender" ? "Tender details" : "When and who"}</h3>
             <div className="form-grid">
-              {category === "distillery" ? (
-                <label className="field full">
-                  <span>Canadian province(s) of visiting parties *</span>
-                  <select multiple {...register("provinces")} size={5}>
-                    {Object.entries(PROVINCES).map(([id, label]) => (
-                      <option value={id} key={id}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <small>
-                    Choose the Canadian home provinces of the customers or
-                    distributors travelling. Hold Ctrl or Command to select more
-                    than one.
-                  </small>
-                </label>
-              ) : (
-                <label className="field">
-                  <span>Province *</span>
-                  <select
-                    value={form.watch("provinces")[0] || "AB"}
-                    onChange={(e) =>
-                      form.setValue("provinces", [e.target.value], {
-                        shouldDirty: true,
-                      })
-                    }
-                  >
-                    {Object.entries(PROVINCES).map(([id, label]) => (
-                      <option value={id} key={id}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
               {field(
-                "city",
-                category === "distillery" ? "Destination city" : "City",
+                "title",
+                category === "tender" ? "Tender" : "Entry title",
+                "text",
+                { full: true, required: true },
               )}
-              {category === "distillery" && (
+              {category === "tender" ? (
                 <>
-                  {field("customer", "Customer name", "text", { full: true })}
-                  {field("visitors", "People going", "textarea", {
-                    full: true,
-                  })}
-                  {field("agenda", "Agenda link", "url", {
-                    full: true,
-                    hint: "Link to the separate agenda with itinerary and travel details.",
+                  <label className="field full">
+                    <span>Destination(s) *</span>
+                    <input
+                      list="destination-options"
+                      {...register("destination")}
+                    />
+                    <datalist id="destination-options">
+                      {destinations.map((d) => (
+                        <option key={d} value={d} />
+                      ))}
+                    </datalist>
+                  </label>
+                  {field("priceRange", "Price Range", "text", { full: true })}
+                  {field(
+                    "preSubmissionDeadline",
+                    "Pre-submission Deadline",
+                    "date",
+                    { required: true },
+                  )}
+                  {field("callBackDeadline", "Call Back Deadline", "date", {
+                    required: true,
                   })}
                 </>
-              )}
-              {category === "event" && (
+              ) : (
                 <>
-                  {field("venueName", "Venue name", "text", { full: true })}
-                  <AddressField
-                    value={form.watch("address")}
-                    city={form.watch("city")}
-                    province={form.watch("provinces")[0]}
-                    disabled={busy}
-                    onChange={(value) =>
-                      form.setValue("address", value, { shouldDirty: true })
-                    }
-                    onSelect={(result) => {
-                      form.setValue("address", result.address, {
-                        shouldDirty: true,
-                      });
-                      if (result.city)
-                        form.setValue("city", result.city, {
-                          shouldDirty: true,
-                        });
-                      if (result.province)
-                        form.setValue("provinces", [result.province], {
-                          shouldDirty: true,
-                        });
-                      form.setValue("postalCode", result.postalCode || "", {
-                        shouldDirty: true,
-                      });
-                    }}
-                  />
-                  {field("postalCode", "Postal code", "text", {
-                    hint: "Canadian postal code, for example T2P 1J9.",
-                  })}
-                  {field("customer", "Customer name, if applicable")}
-                  {field("attendance", "Expected attendance", "number")}
-                  {field("activationTerms", "Activation terms", "textarea", {
-                    full: true,
-                  })}
-                  {field("peopleNames", "Names")}
-                  {field("company", "Company")}
-                  {field("setup", "Setup / teardown", "text", { full: true })}
-                  {field("products", "Products and serving plan", "textarea", {
-                    full: true,
-                  })}
-                  {field("equipment", "Equipment and materials", "textarea", {
-                    full: true,
-                  })}
-                  {field("specialNotes", "Special Notes", "textarea", {
-                    full: true,
-                  })}
-                  <p className="field-hint full">
-                    Save this event to upload photos or PDFs of serving alcohol
-                    certificates from its details panel.
-                  </p>
+                  {field("startDate", "Start date", "date", { required: true })}
+                  {field("endDate", "End date", "date", { required: true })}
+                  {category !== "distillery" && (
+                    <>
+                      {field("startTime", "Start time", "time")}
+                      {field("endTime", "End time", "time")}
+                      {select(
+                        "timeZone",
+                        "Meeting / event time zone",
+                        Object.fromEntries(
+                          TIMEZONES.map((t) => [t, t.replaceAll("_", " ")]),
+                        ),
+                      )}
+                    </>
+                  )}
+                  {field("distributor", "Responsible distributor")}
+                  {category !== "distillery" &&
+                    select(
+                      "status",
+                      "Status",
+                      Object.fromEntries(
+                        ["Draft", "Confirmed", "Completed", "Cancelled"].map(
+                          (s) => [s, s],
+                        ),
+                      ),
+                    )}
                 </>
               )}
             </div>
-            {category === "market" && (
-              <>
-                <div className="customers-editor">
-                  {customers.fields.map((customer, index) => (
-                    <fieldset className="customer-card" key={customer.id}>
-                      <legend>Customer {index + 1}</legend>
-                      <div className="form-grid">
-                        {field(
-                          `customers.${index}.name`,
-                          "Customer name",
-                          "text",
-                          { full: true, required: true },
-                        )}
-                        {field(
-                          `customers.${index}.purpose`,
-                          "Meeting purpose",
-                          "text",
-                          { full: true },
-                        )}
-                        {field(
-                          `customers.${index}.location`,
-                          "Meeting location",
-                          "text",
-                          { full: true },
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        className="remove-button"
-                        aria-label={`Remove customer ${index + 1}`}
-                        disabled={customers.fields.length === 1}
-                        onClick={() => customers.remove(index)}
-                      >
-                        <Trash2 size={13} />
-                        Remove customer
-                      </Button>
-                    </fieldset>
-                  ))}
-                </div>
-                <Button
-                  variant="secondary"
-                  disabled={customers.fields.length >= 50}
-                  onClick={() =>
-                    customers.append({ name: "", purpose: "", location: "" })
-                  }
-                >
-                  <Plus size={14} />
-                  Add customer
-                </Button>
-                <div className="form-grid mt-5">
-                  {field("stops", "Customer stops", "textarea", {
-                    full: true,
-                    hint: "Optional meeting times and stops, one per line.",
-                  })}
-                </div>
-              </>
-            )}
           </section>
-        )}
-        {category === "tender" && (
-          <section className="form-section">
-            <h3>Product requirements</h3>
-            {requirements.fields.map((row, index) => (
-              <fieldset className="requirement-card" key={row.id}>
-                <legend>Requirement {index + 1}</legend>
-                <div className="form-grid">
-                  {field(
-                    `requirements.${index}.priority`,
-                    "Priority",
-                    "number",
-                    { required: true },
-                  )}
-                  {field(
-                    `requirements.${index}.specification`,
-                    "Product Specification",
-                    "textarea",
-                    { full: true, required: true },
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  className="remove-button"
-                  aria-label={`Remove requirement ${index + 1}`}
-                  disabled={requirements.fields.length === 1}
-                  onClick={() => requirements.remove(index)}
-                >
-                  <Trash2 size={13} />
-                  Remove requirement
-                </Button>
-              </fieldset>
-            ))}
-            <Button
-              variant="secondary"
-              disabled={requirements.fields.length >= 50}
-              onClick={() =>
-                requirements.append({
-                  priority: requirements.fields.length + 1,
-                  specification: "",
-                })
-              }
-            >
-              <Plus size={14} />
-              Add priority / specification
-            </Button>
-          </section>
-        )}
-        <section className="form-section">
-          <h3>Invite by email</h3>
-          <label className="field">
-            <span>Email addresses</span>
-            <textarea
-              rows={2}
-              value={emailText}
-              onChange={(event) => {
-                setEmailText(event.target.value);
-                form.setValue(
-                  "emails",
-                  [
-                    ...new Set(
-                      event.target.value
-                        .split(/[,;\n]/)
-                        .map((e) => e.trim().toLowerCase())
-                        .filter(Boolean),
-                    ),
-                  ],
-                  { shouldDirty: true },
-                );
+          {category !== "tender" && (
+            <section className="form-section">
+              <h3>{CATEGORIES[category].singular} details</h3>
+              <div className="form-grid">
+                {category === "distillery" ? (
+                  <label className="field full">
+                    <span>Canadian province(s) of visiting parties *</span>
+                    <select multiple {...register("provinces")} size={5}>
+                      {Object.entries(PROVINCES).map(([id, label]) => (
+                        <option value={id} key={id}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <small>
+                      Choose the Canadian home provinces of the customers or
+                      distributors travelling. Hold Ctrl or Command to select
+                      more than one.
+                    </small>
+                  </label>
+                ) : (
+                  <label className="field">
+                    <span>Province *</span>
+                    <select
+                      value={form.watch("provinces")[0] || "AB"}
+                      onChange={(e) =>
+                        form.setValue("provinces", [e.target.value], {
+                          shouldDirty: true,
+                        })
+                      }
+                    >
+                      {Object.entries(PROVINCES).map(([id, label]) => (
+                        <option value={id} key={id}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {field(
+                  "city",
+                  category === "distillery" ? "Destination city" : "City",
+                )}
+                {category === "distillery" && (
+                  <>
+                    {field("customer", "Customer name", "text", { full: true })}
+                    {field("visitors", "People going", "textarea", {
+                      full: true,
+                    })}
+                    {field("agenda", "Agenda link", "url", {
+                      full: true,
+                      hint: "Link to the separate agenda with itinerary and travel details.",
+                    })}
+                  </>
+                )}
+                {category === "event" && (
+                  <>
+                    {field("venueName", "Venue name", "text", { full: true })}
+                    <AddressField
+                      value={form.watch("address")}
+                      city={form.watch("city")}
+                      province={form.watch("provinces")[0]}
+                      disabled={busy}
+                      onChange={(value) =>
+                        form.setValue("address", value, { shouldDirty: true })
+                      }
+                      onSelect={(result) => {
+                        form.setValue("address", result.address, {
+                          shouldDirty: true,
+                        });
+                        if (result.city)
+                          form.setValue("city", result.city, {
+                            shouldDirty: true,
+                          });
+                        if (result.province)
+                          form.setValue("provinces", [result.province], {
+                            shouldDirty: true,
+                          });
+                        form.setValue("postalCode", result.postalCode || "", {
+                          shouldDirty: true,
+                        });
+                      }}
+                    />
+                    {field("postalCode", "Postal code", "text", {
+                      hint: "Canadian postal code, for example T2P 1J9.",
+                    })}
+                    {field("customer", "Customer name, if applicable")}
+                    {field("attendance", "Expected attendance", "number")}
+                    {field("activationTerms", "Activation terms", "textarea", {
+                      full: true,
+                    })}
+                    {field("peopleNames", "Names")}
+                    {field("company", "Company")}
+                    {field("setup", "Setup / teardown", "text", { full: true })}
+                    {field(
+                      "products",
+                      "Products and serving plan",
+                      "textarea",
+                      {
+                        full: true,
+                      },
+                    )}
+                    {field("equipment", "Equipment and materials", "textarea", {
+                      full: true,
+                    })}
+                    {field("specialNotes", "Special Notes", "textarea", {
+                      full: true,
+                    })}
+                  </>
+                )}
+              </div>
+              {category === "market" && (
+                <>
+                  <div className="customers-editor">
+                    {customers.fields.map((customer, index) => (
+                      <fieldset className="customer-card" key={customer.id}>
+                        <legend>Customer {index + 1}</legend>
+                        <div className="form-grid">
+                          {field(
+                            `customers.${index}.name`,
+                            "Customer name",
+                            "text",
+                            { full: true, required: true },
+                          )}
+                          {field(
+                            `customers.${index}.purpose`,
+                            "Meeting purpose",
+                            "text",
+                            { full: true },
+                          )}
+                          {field(
+                            `customers.${index}.location`,
+                            "Meeting location",
+                            "text",
+                            { full: true },
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          className="remove-button"
+                          aria-label={`Remove customer ${index + 1}`}
+                          disabled={customers.fields.length === 1}
+                          onClick={() => customers.remove(index)}
+                        >
+                          <Trash2 size={13} />
+                          Remove customer
+                        </Button>
+                      </fieldset>
+                    ))}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    disabled={customers.fields.length >= 50}
+                    onClick={() =>
+                      customers.append({ name: "", purpose: "", location: "" })
+                    }
+                  >
+                    <Plus size={14} />
+                    Add customer
+                  </Button>
+                  <div className="form-grid mt-5">
+                    {field("stops", "Customer stops", "textarea", {
+                      full: true,
+                      hint: "Optional meeting times and stops, one per line.",
+                    })}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+          {category === "tender" && (
+            <section className="form-section">
+              <h3>Product requirements</h3>
+              {requirements.fields.map((row, index) => (
+                <fieldset className="requirement-card" key={row.id}>
+                  <legend>Requirement {index + 1}</legend>
+                  <div className="form-grid">
+                    {field(
+                      `requirements.${index}.priority`,
+                      "Priority",
+                      "number",
+                      { required: true },
+                    )}
+                    {field(
+                      `requirements.${index}.specification`,
+                      "Product Specification",
+                      "textarea",
+                      { full: true, required: true },
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="remove-button"
+                    aria-label={`Remove requirement ${index + 1}`}
+                    disabled={requirements.fields.length === 1}
+                    onClick={() => requirements.remove(index)}
+                  >
+                    <Trash2 size={13} />
+                    Remove requirement
+                  </Button>
+                </fieldset>
+              ))}
+              <Button
+                variant="secondary"
+                disabled={requirements.fields.length >= 50}
+                onClick={() =>
+                  requirements.append({
+                    priority: requirements.fields.length + 1,
+                    specification: "",
+                  })
+                }
+              >
+                <Plus size={14} />
+                Add priority / specification
+              </Button>
+            </section>
+          )}
+          {category === "event" && (
+            <DocumentPicker
+              files={pendingFiles}
+              existing={savedEntry?.attachments || []}
+              entryId={savedEntry?.id}
+              disabled={busy}
+              available={uploadsEnabled}
+              onChange={(files) => {
+                setPendingFiles(files);
+                setError("");
               }}
             />
-            <small>
-              Separate addresses with commas. Send invitations after saving. No
-              RSVP is requested.
-            </small>
-          </label>
-        </section>
-        {error && (
-          <p role="alert" className="form-error">
-            {error}
-          </p>
-        )}
+          )}
+          <section className="form-section">
+            <h3>Invite by email</h3>
+            <label className="field">
+              <span>Email addresses</span>
+              <textarea
+                rows={2}
+                value={emailText}
+                onChange={(event) => {
+                  setEmailText(event.target.value);
+                  form.setValue(
+                    "emails",
+                    [
+                      ...new Set(
+                        event.target.value
+                          .split(/[,;\n]/)
+                          .map((e) => e.trim().toLowerCase())
+                          .filter(Boolean),
+                      ),
+                    ],
+                    { shouldDirty: true },
+                  );
+                }}
+              />
+              <small>
+                Separate addresses with commas. Send invitations after saving.
+                No RSVP is requested.
+              </small>
+            </label>
+          </section>
+          {error && (
+            <p role="alert" className="form-error">
+              {error}
+            </p>
+          )}
+        </fieldset>
       </form>
     </Panel>
   );
