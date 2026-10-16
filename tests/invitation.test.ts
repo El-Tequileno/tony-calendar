@@ -3,6 +3,45 @@ import { invitationHtml, invitationText } from "../src/lib/invitation";
 import { entryFixtures } from "./fixtures";
 
 describe("invitation email formatting", () => {
+  it("keeps dates separate from start/end times and the time zone in HTML and plain text", () => {
+    const entry = {
+      ...entryFixtures()[2],
+      startTime: "15:00",
+      endTime: "18:00",
+    };
+    const html = invitationHtml(entry, "https://calendar.example");
+    const emailRows = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map(
+      (match) => match[1],
+    );
+    expect(emailRows.find((row) => row.includes(">When</td>"))).toContain(
+      "October 20, 2026</td>",
+    );
+    expect(emailRows.find((row) => row.includes(">When</td>"))).not.toContain(
+      "15:00",
+    );
+    expect(emailRows.find((row) => row.includes(">Start time</td>"))).toContain(
+      "15:00</td>",
+    );
+    expect(emailRows.find((row) => row.includes(">End time</td>"))).toContain(
+      "18:00</td>",
+    );
+    const text = invitationText(entry, "https://calendar.example");
+    expect(text).toContain(
+      "When: October 20, 2026\n\nStart time: 15:00\n\nEnd time: 18:00\n\nTime zone: America/Edmonton",
+    );
+    expect(
+      invitationText(
+        { ...entry, endDate: "2026-10-21" },
+        "https://calendar.example",
+      ),
+    ).toContain("When: October 20, 2026 – October 21, 2026\n\nStart time:");
+    expect(
+      invitationText(
+        { ...entry, startTime: "", endTime: "" },
+        "https://calendar.example",
+      ),
+    ).not.toContain("Time zone:");
+  });
   it("uses explicit rows and customer groups so email clients do not need whitespace CSS", () => {
     const entry = entryFixtures()[0];
     entry.customers[0].purpose = "First line\nSecond line";

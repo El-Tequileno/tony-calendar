@@ -1,7 +1,7 @@
 import type { Entry } from "./validation";
 import { APP_NAME } from "./brand";
 import { CATEGORIES, PROVINCES } from "./constants";
-import { formatDay, when } from "./dates";
+import { formatDay } from "./dates";
 
 type Detail = [label: string, value: string];
 function escape(value: string) {
@@ -40,7 +40,13 @@ function details(entry: Entry): Detail[] {
           ["Price range", entry.priceRange],
         ]
       : [
-          ["When", when(entry)],
+          [
+            "When",
+            `${formatDay(entry.startDate)}${entry.endDate !== entry.startDate ? ` – ${formatDay(entry.endDate)}` : ""}`,
+          ],
+          ["Start time", entry.startTime],
+          ["End time", entry.endTime],
+          ["Time zone", entry.startTime || entry.endTime ? entry.timeZone : ""],
           ["Province(s)", entry.provinces.map((p) => PROVINCES[p]).join(", ")],
           ["City", entry.city],
           ...(entry.type === "event" ? [] : [["Location", entry.location]]),
