@@ -225,7 +225,9 @@ export function EntryDetail({
           <>
             <Group title="Activation">
               <dl>
-                <Item label="Venue / address" value={entry.location} />
+                <Item label="Venue name" value={entry.venueName} />
+                <Item label="Address" value={entry.address} />
+                <Item label="Postal code" value={entry.postalCode} />
                 <Item label="Customer" value={entry.customer} />
                 <Item label="Activation terms" value={entry.activationTerms} />
                 <div className="detail-grid">
@@ -239,6 +241,7 @@ export function EntryDetail({
                   value={entry.products}
                 />
                 <Item label="Equipment and materials" value={entry.equipment} />
+                <Item label="Special Notes" value={entry.specialNotes} />
               </dl>
             </Group>
             <Group title="Serving alcohol certificates">

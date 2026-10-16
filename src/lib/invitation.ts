@@ -43,7 +43,7 @@ function details(entry: Entry): Detail[] {
           ["When", when(entry)],
           ["Province(s)", entry.provinces.map((p) => PROVINCES[p]).join(", ")],
           ["City", entry.city],
-          ["Location", entry.location],
+          ...(entry.type === "event" ? [] : [["Location", entry.location]]),
           ["Distributor", entry.distributor],
         ]),
     ...(entry.type === "distillery"
@@ -54,6 +54,9 @@ function details(entry: Entry): Detail[] {
       : []),
     ...(entry.type === "event"
       ? [
+          ["Venue name", entry.venueName],
+          ["Address", entry.address || entry.location],
+          ["Postal code", entry.postalCode],
           ["Activation terms", entry.activationTerms],
           ["Names", entry.peopleNames],
           ["Company", entry.company],
@@ -61,6 +64,7 @@ function details(entry: Entry): Detail[] {
           ["Setup", entry.setup],
           ["Products", entry.products],
           ["Equipment", entry.equipment],
+          ["Special Notes", entry.specialNotes],
         ]
       : []),
   ].filter(([, value]) => !!value) as Detail[];

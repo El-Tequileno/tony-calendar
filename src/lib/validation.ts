@@ -65,6 +65,26 @@ export const entrySchema = z
       )
       .default(""),
     location: text,
+    venueName: text,
+    address: text,
+    postalCode: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .transform((value) => value.replace(/\s+/g, ""))
+      .refine(
+        (value) =>
+          !value ||
+          /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTVWXYZ]\d[ABCEGHJ-NPRSTVWXYZ]\d$/.test(
+            value,
+          ),
+        "Enter a Canadian postal code, for example T2P 1J9.",
+      )
+      .transform((value) =>
+        value ? `${value.slice(0, 3)} ${value.slice(3)}` : "",
+      )
+      .default(""),
+    specialNotes: text,
     activationTerms: text,
     peopleNames: text,
     company: text,
@@ -204,6 +224,10 @@ export function emptyEntry(type: EntryInput["type"], day: string): EntryInput {
     visitors: "",
     agenda: "",
     location: "",
+    venueName: "",
+    address: "",
+    postalCode: "",
+    specialNotes: "",
     activationTerms: "",
     peopleNames: "",
     company: "",

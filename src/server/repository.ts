@@ -26,6 +26,11 @@ export async function listEntries(): Promise<Entry[]> {
   ]);
   return rows.map((row) => ({
     ...row.data,
+    venueName: row.data.venueName || "",
+    address:
+      row.data.address ?? (row.type === "event" ? row.data.location || "" : ""),
+    postalCode: row.data.postalCode || "",
+    specialNotes: row.data.specialNotes || "",
     type: row.type,
     id: row.id,
     revision: row.revision,

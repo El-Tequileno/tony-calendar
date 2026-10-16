@@ -24,6 +24,7 @@ import {
 } from "@/lib/validation";
 import { api } from "@/lib/api";
 import { calendarToday } from "@/lib/dates";
+import { AddressField } from "./address-field";
 
 export function EntryForm({
   entry,
@@ -113,6 +114,7 @@ export function EntryForm({
   }
   const submit = form.handleSubmit(
     async (data) => {
+      if (data.type === "event") data.location = "";
       setBusy(true);
       setError("");
       try {
@@ -316,7 +318,35 @@ export function EntryForm({
               )}
               {category === "event" && (
                 <>
-                  {field("location", "Venue / address", "text", { full: true })}
+                  {field("venueName", "Venue name", "text", { full: true })}
+                  <AddressField
+                    value={form.watch("address")}
+                    city={form.watch("city")}
+                    province={form.watch("provinces")[0]}
+                    disabled={busy}
+                    onChange={(value) =>
+                      form.setValue("address", value, { shouldDirty: true })
+                    }
+                    onSelect={(result) => {
+                      form.setValue("address", result.address, {
+                        shouldDirty: true,
+                      });
+                      if (result.city)
+                        form.setValue("city", result.city, {
+                          shouldDirty: true,
+                        });
+                      if (result.province)
+                        form.setValue("provinces", [result.province], {
+                          shouldDirty: true,
+                        });
+                      form.setValue("postalCode", result.postalCode || "", {
+                        shouldDirty: true,
+                      });
+                    }}
+                  />
+                  {field("postalCode", "Postal code", "text", {
+                    hint: "Canadian postal code, for example T2P 1J9.",
+                  })}
                   {field("customer", "Customer name, if applicable")}
                   {field("attendance", "Expected attendance", "number")}
                   {field("activationTerms", "Activation terms", "textarea", {
@@ -329,6 +359,9 @@ export function EntryForm({
                     full: true,
                   })}
                   {field("equipment", "Equipment and materials", "textarea", {
+                    full: true,
+                  })}
+                  {field("specialNotes", "Special Notes", "textarea", {
                     full: true,
                   })}
                   <p className="field-hint full">

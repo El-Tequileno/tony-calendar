@@ -102,6 +102,54 @@ button:disabled:hover {
 .full {
   grid-column: 1/-1;
 }
+.address-search-row {
+  display: flex;
+  gap: 8px;
+}
+.address-search-row input {
+  min-width: 0;
+  flex: 1;
+}
+.address-field > label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #718477;
+}
+.address-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.address-results li + li {
+  border-top: 1px solid var(--line);
+}
+.address-results button {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  padding: 12px;
+  background: #fff;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.address-results button:hover,
+.address-results button:focus-visible {
+  background: #f1f6ed;
+}
+.address-results svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.address-attribution a {
+  text-decoration: underline;
+}
 .button {
   display: inline-flex;
   align-items: center;

@@ -6,7 +6,7 @@ A shared planning workspace for Tony and Canadian distributors. Built with Next.
 
 - **BBG Market visits:** multiple grouped customer names, meeting purposes, and meeting locations.
 - **Casa Salles Visits:** visiting parties' Canadian provinces and a link to a separate agenda.
-- **Events in Canada:** activation terms, names, company, event logistics, and serving-alcohol certificates.
+- **Events in Canada:** venue name, address, Canadian postal code, Special Notes, activation terms, names, company, event logistics, and serving-alcohol certificates.
 - **Provincial tender calls:** destination grouping/filtering, repeated priority/specification rows, price range, and two linked deadline occurrences. No Call ID field.
 - Month, week, and list views; province filters; a destination filter for tenders.
 - Acknowledgments attached to the entered approved email, preserved through edits.
@@ -75,6 +75,10 @@ npm run db:import-tenders -- ./tender-data.js
 ```
 
 The importer parses its JSON array without executing JavaScript, imports the repeated priorities into the configured database, and skips existing imported IDs. It does not publish business data or send email. Browser-only edits made in the old prototype are not automatically imported.
+
+## Canadian address search
+
+The Canada event form includes an explicit **Search** action using Natural Resources Canada's free [Geolocator API](https://natural-resources.canada.ca/maps-tools-publications/satellite-elevation-air-photos/geolocation-service), with no API key. Select a result to fill the street address, city and province. Check the result and enter the full postal code manually when it is unavailable. Searches run only when requested, are limited per approved email, and public results are cached for one day. `ADDRESS_LOOKUP_URL` can override the service endpoint. Manual entry remains available if lookup fails.
 
 ## Email invitations
 
