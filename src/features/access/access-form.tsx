@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ArrowRight, Mail } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { APP_NAME, BRAND_LOGO } from "@/lib/brand";
 export function AccessForm({ entryId }: { entryId?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -12,13 +14,15 @@ export function AccessForm({ entryId }: { entryId?: string }) {
   return (
     <main className="access-page">
       <div className="access-art">
-        <div className="brand">
-          <span className="brand-mark">
-            T<span>·</span>C
-          </span>
-          <div>
-            Tony Calendar<small>Planning workspace</small>
-          </div>
+        <div className="access-brand">
+          <Image
+            src={BRAND_LOGO}
+            alt="Tequila El Tequileño"
+            width={600}
+            height={600}
+            className="access-logo"
+            preload
+          />
         </div>
         <div className="access-heading">
           <p className="eyebrow">CONNECTED PLANS. CLEARER DAYS.</p>
@@ -67,12 +71,9 @@ export function AccessForm({ entryId }: { entryId?: string }) {
           <h2>
             Welcome to
             <br />
-            Tony Calendar.
+            {APP_NAME}.
           </h2>
-          <p>
-            Enter an email approved for this workspace. No verification code is
-            sent.
-          </p>
+          <p>Enter an email approved for this workspace.</p>
           <label className="field">
             <span>Approved email</span>
             <input

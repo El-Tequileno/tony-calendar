@@ -1,4 +1,4 @@
-# Tony Calendar
+# El Tequileño’s Canada Calendar
 
 A shared planning workspace for Tony and Canadian distributors. Built with Next.js App Router, React, TypeScript, Drizzle ORM, and Neon PostgreSQL; prepared for Netlify hosting.
 

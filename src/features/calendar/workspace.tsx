@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -25,6 +26,7 @@ import {
 } from "@/features/entries/entry-detail";
 import { EntryList } from "./entry-list";
 import { PeopleSection } from "@/features/people/people-section";
+import { APP_NAME, BRAND_LOGO } from "@/lib/brand";
 const CalendarGrid = dynamic(
   () => import("./calendar-grid").then((module) => module.CalendarGrid),
   {
@@ -184,11 +186,16 @@ export function Workspace({
       )}
       <aside className={`sidebar ${menu ? "open" : ""}`}>
         <div className="brand">
-          <span className="brand-mark">
-            T<span>·</span>C
-          </span>
+          <Image
+            src={BRAND_LOGO}
+            alt="Tequila El Tequileño"
+            width={600}
+            height={600}
+            className="sidebar-logo"
+          />
           <div>
-            Tony Calendar<small>Planning workspace</small>
+            {APP_NAME}
+            <small>Planning workspace</small>
           </div>
         </div>
         <p className="sidebar-label">WORKSPACE</p>

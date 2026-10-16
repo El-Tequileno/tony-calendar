@@ -175,22 +175,15 @@ button:disabled:hover {
   font-size: 13px;
   font-weight: 750;
 }
-.brand-mark {
-  width: 43px;
-  height: 43px;
-  border: 1px solid #6a8278;
-  border-radius: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: Georgia, serif;
-  font-size: 17px;
-  font-weight: 400;
+.sidebar-logo {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
   flex-shrink: 0;
 }
-.brand-mark > span {
-  color: #b7ad91;
-  padding: 0 2px;
+.brand > div {
+  min-width: 0;
+  line-height: 1.45;
 }
 .brand small {
   display: block;
@@ -1188,20 +1181,13 @@ button:disabled:hover {
 .email-preview {
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 20px;
+  overflow: hidden;
   font-size: 12px;
   line-height: 1.7;
   color: #718b73;
   margin: 20px 0;
 }
-.email-preview h3 {
-  font-family: Georgia, serif;
-  font-weight: 400;
-  font-size: 24px;
-  color: var(--ink);
-}
 .email-preview p {
-  white-space: pre-line;
   overflow-wrap: anywhere;
 }
 .attachments {
@@ -1302,8 +1288,18 @@ button:disabled:hover {
     0 0 0 35px #b3aa6e0a,
     0 0 0 70px #b3aa6e05;
 }
+.access-brand {
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.access-logo {
+  width: clamp(125px, 15vw, 190px);
+  height: auto;
+  object-fit: contain;
+}
 .access-heading {
-  padding: 70px 6% 90px;
+  padding: 38px 6% 55px;
   flex: 1;
 }
 .access-heading .eyebrow {
@@ -1575,8 +1571,8 @@ button:disabled:hover {
   .access-art {
     padding: 23px;
   }
-  .access-art .brand {
-    padding: 0;
+  .access-logo {
+    width: 105px;
   }
   .access-heading {
     padding: 20px 0 0;

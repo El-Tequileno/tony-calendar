@@ -7,6 +7,7 @@ import { CATEGORIES, PROVINCES } from "@/lib/constants";
 import { formatDay, when } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
 import { api } from "@/lib/api";
+import { invitationBodyHtml, invitationSubject } from "@/lib/invitation";
 export type Capabilities = {
   emailSending: boolean;
   uploads: boolean;
@@ -385,46 +386,20 @@ export function EntryDetail({
         <p className="field-hint">
           <strong>To:</strong> {entry.emails.join(", ")}
           <br />
-          <strong>Subject:</strong> Calendar invitation: {entry.title}
+          <strong>Subject:</strong> {invitationSubject(entry)}
         </p>
-        <article className="email-preview">
-          <h3>{entry.title}</h3>
-          <p>{when(entry)}</p>
-          {entry.type === "tender" ? (
-            <p>Destination(s): {entry.destination}</p>
-          ) : (
-            <p>
-              {entry.city} ·{" "}
-              {entry.provinces.map((p) => PROVINCES[p]).join(", ")}
-            </p>
-          )}
-          {entry.type === "market" &&
-            entry.customers.map((c, i) => (
-              <p key={i}>
-                <strong>{c.name}</strong>
-                <br />
-                {c.purpose}
-                <br />
-                {c.location}
-              </p>
-            ))}
-          {entry.type === "distillery" && entry.agenda && (
-            <p>Visit agenda: {entry.agenda}</p>
-          )}
-          {entry.type === "event" && (
-            <p>
-              Activation terms: {entry.activationTerms}
-              <br />
-              Names: {entry.peopleNames}
-              <br />
-              Company: {entry.company}
-            </p>
-          )}
-          <p>
-            The email includes a link to this calendar entry. No RSVP is
-            requested.
-          </p>
-        </article>
+        <article
+          className="email-preview"
+          aria-label="Invitation email preview"
+          dangerouslySetInnerHTML={{
+            __html: invitationBodyHtml(
+              entry,
+              typeof window === "undefined"
+                ? "https://calendar.example"
+                : window.location.origin,
+            ),
+          }}
+        />
         {!capabilities.emailSending && (
           <div className="service-note">
             Email sending is not enabled. Configure the sender and email
