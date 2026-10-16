@@ -132,6 +132,21 @@ button:disabled:hover {
 .button-secondary:hover {
   background: #f5f8f3;
 }
+.button-danger {
+  background: #a33f3b;
+  color: white;
+}
+.button-danger:hover {
+  background: #88332f;
+}
+.entry-delete-button {
+  color: #a33f3b;
+  border-color: #e8c9c6;
+  margin-right: auto;
+}
+.entry-delete-button:hover {
+  background: #fff3f1;
+}
 .button-ghost {
   background: transparent;
   color: var(--muted);
@@ -845,10 +860,41 @@ button:disabled:hover {
   border-top: 1px solid var(--line);
   padding: 15px 27px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
   flex-shrink: 0;
   background: white;
+}
+.delete-entry-summary {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f7f9f4;
+}
+.delete-entry-summary strong {
+  display: block;
+  font-size: 16px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.delete-entry-summary span {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.delete-entry-summary p,
+.delete-entry-message {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #64756c;
+}
+.delete-entry-summary p {
+  margin: 6px 0 0;
+}
+.delete-entry-message {
+  margin: 20px 0 0;
 }
 .form-intro {
   font-size: 12px;

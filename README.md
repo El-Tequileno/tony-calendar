@@ -12,6 +12,7 @@ A shared planning workspace for Tony and Canadian distributors. Built with Next.
 - Acknowledgments attached to the entered approved email, preserved through edits.
 - Arbitrary invitation recipients, email preview, and explicit send action. Informational emails without RSVP.
 - Transactional database saves and revision checks to prevent stale edits.
+- Delete entries from their details after confirming in a dialog. Cancel keeps the entry. Deletion removes both tender dates and related records; certificate files are cleaned up after the database deletion.
 - Background refresh every minute while visible and refresh when returning to the tab.
 - Tony-only **People** section to add approved emails and disable or restore calendar access.
 
@@ -128,4 +129,4 @@ A public source repository does not make Neon public. Keep credentials in enviro
 
 ## Current scope
 
-Pricing/promotions, verified account authentication, a general role system, edit history, RSVP, instant push synchronization, recurring events, and scheduled reminders are outside this first version. Users can create/edit entries; deletion and attachment removal are not exposed yet. Tony's people-management permission is stored in the database.
+Pricing/promotions, verified account authentication, a general role system, edit history, RSVP, instant push synchronization, recurring events, and scheduled reminders are outside this first version. Users can create, edit, and delete entries; individual attachment removal is not exposed yet. Tony's people-management permission is stored in the database.

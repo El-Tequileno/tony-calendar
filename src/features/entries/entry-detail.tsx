@@ -1,12 +1,19 @@
 "use client";
 import { useState } from "react";
-import { ExternalLink, Mail, Pencil, Upload, FileText } from "lucide-react";
+import {
+  ExternalLink,
+  Mail,
+  Pencil,
+  Upload,
+  FileText,
+  Trash2,
+} from "lucide-react";
 import { Panel } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, PROVINCES } from "@/lib/constants";
 import { formatDay, when } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
-import { api } from "@/lib/api";
+import { api, RequestError } from "@/lib/api";
 import { invitationBodyHtml, invitationSubject } from "@/lib/invitation";
 export type Capabilities = {
   emailSending: boolean;
@@ -41,6 +48,7 @@ export function EntryDetail({
   onClose,
   onEdit,
   onUpdated,
+  onDeleted,
   onMessage,
 }: {
   entry: Entry;
@@ -49,12 +57,16 @@ export function EntryDetail({
   onClose: () => void;
   onEdit: () => void;
   onUpdated: (e: Entry) => void;
+  onDeleted: (id: string) => void;
   onMessage: (message: string) => void;
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(false);
   const [sending, setSending] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Entry | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   async function acknowledge(checked: boolean) {
     setBusy(true);
     setError("");
@@ -84,6 +96,18 @@ export function EntryDetail({
         eyebrow="CALENDAR ENTRY"
         footer={
           <>
+            <Button
+              variant="secondary"
+              className="entry-delete-button"
+              disabled={busy || sending}
+              onClick={() => {
+                setDeleteError("");
+                setDeleteTarget(entry);
+              }}
+            >
+              <Trash2 size={14} />
+              Delete entry
+            </Button>
             <Button variant="secondary" onClick={onEdit}>
               <Pencil size={14} />
               Edit entry
@@ -337,6 +361,84 @@ export function EntryDetail({
         {error && (
           <p className="form-error" role="alert">
             {error}
+          </p>
+        )}
+      </Panel>
+      <Panel
+        open={!!deleteTarget}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteTarget(null);
+            setDeleteError("");
+          }
+        }}
+        title="Delete entry?"
+        eyebrow="CONFIRM DELETION"
+        modal
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              disabled={deleting}
+              onClick={() => {
+                setDeleteTarget(null);
+                setDeleteError("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={deleting}
+              onClick={async () => {
+                if (!deleteTarget) return;
+                setDeleting(true);
+                setDeleteError("");
+                try {
+                  await api(`/api/entries/${deleteTarget.id}`, {
+                    method: "DELETE",
+                    body: JSON.stringify({ revision: deleteTarget.revision }),
+                  });
+                  onDeleted(deleteTarget.id);
+                  onMessage("Entry deleted.");
+                } catch (error) {
+                  if (error instanceof RequestError && error.status === 404) {
+                    onDeleted(deleteTarget.id);
+                    onMessage("This entry was already deleted.");
+                  } else
+                    setDeleteError(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to delete this entry.",
+                    );
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              <Trash2 size={14} />
+              {deleting ? "Deleting…" : "Delete"}
+            </Button>
+          </>
+        }
+      >
+        <div className="delete-entry-summary">
+          <strong>{deleteTarget?.title}</strong>
+          <span>{CATEGORIES[deleteTarget?.type || entry.type].singular}</span>
+          <p>{when(deleteTarget || entry)}</p>
+        </div>
+        <p className="delete-entry-message">
+          This entry will be removed from the shared calendar for everyone. This
+          cannot be undone.
+        </p>
+        {deleteTarget?.type === "tender" && (
+          <p className="field-hint">
+            Both the pre-submission and call back dates will be removed.
+          </p>
+        )}
+        {deleteError && (
+          <p className="form-error" role="alert">
+            {deleteError}
           </p>
         )}
       </Panel>

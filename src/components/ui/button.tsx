@@ -5,7 +5,7 @@ export function Button({
   className,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "icon";
+  variant?: "primary" | "secondary" | "ghost" | "icon" | "danger";
 }) {
   return (
     <button

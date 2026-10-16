@@ -117,6 +117,26 @@ export async function acknowledge(id: string, email: string, checked: boolean) {
       );
   return getEntry(id);
 }
+export async function deleteEntry(id: string, revision: number) {
+  return db().transaction(async (tx) => {
+    const [entry] = await tx
+      .select({ revision: tables.entries.revision })
+      .from(tables.entries)
+      .where(eq(tables.entries.id, id))
+      .for("update");
+    if (!entry) throw new AppError("Entry not found.", 404);
+    if (entry.revision !== revision)
+      throw new AppError("This entry changed. Reload it before deleting.", 409);
+    const files = await tx
+      .select({ key: tables.attachments.key })
+      .from(tables.attachments)
+      .where(eq(tables.attachments.entryId, id));
+    // Foreign keys remove customer meetings, tender requirements, acknowledgments,
+    // attachment metadata and invitation records in the same transaction.
+    await tx.delete(tables.entries).where(eq(tables.entries.id, id));
+    return files.map((file) => file.key);
+  });
+}
 export async function consumeLimit(key: string, max: number, windowMs: number) {
   const now = new Date(),
     expires = new Date(Date.now() + windowMs);

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { protect, endpoint } from "@/server/http";
 import { getEntry, consumeLimit, addAttachment } from "@/server/repository";
-import { storeFile, detectFile } from "@/server/storage";
+import { storeFile, detectFile, deleteStoredFile } from "@/server/storage";
 import { AppError } from "@/server/errors";
 export const runtime = "nodejs";
 export async function POST(
@@ -32,18 +32,28 @@ export async function POST(
     const contentType = detectFile(bytes);
     const fileId = randomUUID();
     await storeFile(fileId, bytes);
-    return {
-      entry: await addAttachment(
-        id,
-        {
-          id: fileId,
-          name: pathSafeName(file.name),
-          contentType,
-          size: file.size,
-        },
-        fileId,
-      ),
-    };
+    try {
+      return {
+        entry: await addAttachment(
+          id,
+          {
+            id: fileId,
+            name: pathSafeName(file.name),
+            contentType,
+            size: file.size,
+          },
+          fileId,
+        ),
+      };
+    } catch (error) {
+      // The entry may have been deleted while its file was uploading.
+      try {
+        await deleteStoredFile(fileId);
+      } catch {
+        console.error("Unused certificate storage cleanup failed.");
+      }
+      throw error;
+    }
   });
 }
 function pathSafeName(name: string) {

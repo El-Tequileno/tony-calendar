@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { AppError } from "./errors";
 export function uploadsEnabled() {
@@ -34,6 +34,20 @@ export async function readStoredFile(key: string): Promise<ArrayBuffer> {
     buffer.byteOffset,
     buffer.byteOffset + buffer.byteLength,
   ) as ArrayBuffer;
+}
+export async function deleteStoredFile(key: string) {
+  if (process.env.NETLIFY) {
+    await getStore("certificates").delete(key);
+    return;
+  }
+  if (process.env.NODE_ENV !== "development")
+    throw new AppError("Certificate storage is unavailable.", 503);
+  if (!/^[0-9a-f-]{36}$/i.test(key)) throw new Error("Invalid storage key.");
+  try {
+    await unlink(path.join(directory(), key));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
 }
 export function detectFile(bytes: Uint8Array) {
   if (Buffer.from(bytes.slice(0, 5)).toString() === "%PDF-")

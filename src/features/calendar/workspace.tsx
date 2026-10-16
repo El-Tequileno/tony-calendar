@@ -560,6 +560,20 @@ export function Workspace({
             })
           }
           onUpdated={update}
+          onDeleted={(id) => {
+            setEntries((previous) =>
+              previous.filter((entry) => entry.id !== id),
+            );
+            setSelected(null);
+            if (
+              current.type === "tender" &&
+              !entries.some(
+                (entry) => entry.id !== id && entry.destination === destination,
+              )
+            )
+              setDestination("all");
+            if (initialEntryId === id) router.replace("/");
+          }}
           onMessage={setMessage}
         />
       ) : null}
