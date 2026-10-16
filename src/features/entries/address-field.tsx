@@ -132,41 +132,7 @@ export function AddressField({
         </ul>
       )}
       {message && <small role="status">{message}</small>}
-      {provider && (
-        <small className="address-attribution">
-          {provider === "geoapify" ? (
-            <>
-              Powered by{" "}
-              <a
-                href="https://www.geoapify.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Geoapify
-              </a>
-              {" · "}©{" "}
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                OpenStreetMap contributors
-              </a>
-            </>
-          ) : (
-            <>
-              Address search:{" "}
-              <a
-                href="https://natural-resources.canada.ca/maps-tools-publications/satellite-elevation-air-photos/geolocation-service"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Natural Resources Canada
-              </a>
-            </>
-          )}
-        </small>
-      )}
+     
     </div>
   );
 }
