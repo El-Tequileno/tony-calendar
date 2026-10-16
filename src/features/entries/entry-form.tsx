@@ -17,12 +17,13 @@ import {
   type Category,
 } from "@/lib/constants";
 import {
-  entrySchema,
+  entryWriteSchema,
   emptyEntry,
   type Entry,
   type EntryInput,
 } from "@/lib/validation";
 import { api } from "@/lib/api";
+import { calendarToday } from "@/lib/dates";
 
 export function EntryForm({
   entry,
@@ -43,9 +44,11 @@ export function EntryForm({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [emailText, setEmailText] = useState(entry?.emails.join(", ") || "");
+  const today = calendarToday();
+  const initialDay = day < today ? today : day;
   const form = useForm<EntryInput>({
-    resolver: zodResolver(entrySchema) as Resolver<EntryInput>,
-    defaultValues: entry || emptyEntry(type, day),
+    resolver: zodResolver(entryWriteSchema(entry)) as Resolver<EntryInput>,
+    defaultValues: entry || emptyEntry(type, initialDay),
   });
   const customers = useFieldArray({ control: form.control, name: "customers" });
   const requirements = useFieldArray({
@@ -53,6 +56,17 @@ export function EntryForm({
     name: "requirements",
   });
   const { register } = form;
+  const startDate = form.watch("startDate");
+  const preSubmissionDeadline = form.watch("preSubmissionDeadline");
+  function minimumDate(name: Path<EntryInput>) {
+    const earlierDate =
+      name === "endDate"
+        ? startDate
+        : name === "callBackDeadline"
+          ? preSubmissionDeadline
+          : "";
+    return earlierDate > today ? earlierDate : today;
+  }
   function field(
     name: Path<EntryInput>,
     label: string,
@@ -71,6 +85,7 @@ export function EntryForm({
           <input
             {...register(name)}
             type={kind}
+            min={kind === "date" ? minimumDate(name) : undefined}
             step={kind === "number" ? "1" : undefined}
           />
         )}{" "}
@@ -167,7 +182,7 @@ export function EntryForm({
             onClick={() => {
               const next = key as Category;
               setCategory(next);
-              form.reset(emptyEntry(next, day));
+              form.reset(emptyEntry(next, initialDay));
               setEmailText("");
               setError("");
             }}

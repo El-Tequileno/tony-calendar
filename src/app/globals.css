@@ -1834,6 +1834,10 @@ button:disabled:hover {
   min-height: 112px;
   cursor: pointer;
 }
+.past-calendar-day {
+  cursor: not-allowed;
+  background: #f4f6f0;
+}
 .calendar-day-header {
   font-size: 9px;
   font-weight: 700;

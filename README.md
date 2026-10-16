@@ -12,6 +12,7 @@ A shared planning workspace for Tony and Canadian distributors. Built with Next.
 - Acknowledgments attached to the entered approved email, preserved through edits.
 - Arbitrary invitation recipients, email preview, and explicit send action. Informational emails without RSVP.
 - Transactional database saves and revision checks to prevent stale edits.
+- New or changed visit/event dates and tender deadlines must be today or later, using America/Edmonton for the shared calendar day. Existing past dates may stay unchanged when correcting an older entry's other details. The form and server enforce this rule.
 - Delete entries from their details after confirming in a dialog. Cancel keeps the entry. Deletion removes both tender dates and related records; certificate files are cleaned up after the database deletion.
 - Background refresh every minute while visible and refresh when returning to the tab.
 - Tony-only **People** section to add approved emails and disable or restore calendar access.

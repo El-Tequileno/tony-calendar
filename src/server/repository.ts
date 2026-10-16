@@ -2,7 +2,12 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import * as tables from "../db/schema";
-import type { Attachment, Entry, EntryInput } from "../lib/validation";
+import {
+  entryWriteSchema,
+  type Attachment,
+  type Entry,
+  type EntryInput,
+} from "../lib/validation";
 import { AppError } from "./errors";
 
 export async function listEntries(): Promise<Entry[]> {
@@ -54,11 +59,23 @@ export async function saveEntry(
   id?: string,
   revision?: number,
 ): Promise<Entry> {
+  if (!id) data = entryWriteSchema().parse(data);
   const entryId = id || randomUUID();
   const { customers, requirements, ...payload } = data;
   await db().transaction(async (tx) => {
     if (id) {
       if (!revision) throw new AppError("An entry revision is required.", 400);
+      const [previous] = await tx
+        .select()
+        .from(tables.entries)
+        .where(eq(tables.entries.id, id))
+        .for("update");
+      if (!previous || previous.revision !== revision)
+        throw new AppError(
+          "This entry changed or was removed. Reload it before saving again.",
+          409,
+        );
+      entryWriteSchema({ ...previous.data, type: previous.type }).parse(data);
       const updated = await tx
         .update(tables.entries)
         .set({

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PROVINCES } from "./constants";
+import { calendarToday } from "./dates";
 const text = z.string().trim().max(10000).default("");
 const date = z
   .string()
@@ -132,6 +133,40 @@ export const entrySchema = z
     }
   });
 export type EntryInput = z.infer<typeof entrySchema>;
+type Schedule = Pick<
+  EntryInput,
+  | "type"
+  | "startDate"
+  | "endDate"
+  | "preSubmissionDeadline"
+  | "callBackDeadline"
+>;
+export function entryWriteSchema(previous?: Schedule, now?: Date) {
+  return entrySchema.superRefine((entry, ctx) => {
+    const today = calendarToday(now);
+    const dates =
+      entry.type === "tender"
+        ? ([
+            ["preSubmissionDeadline", "Pre-submission deadline"],
+            ["callBackDeadline", "Call back deadline"],
+          ] as const)
+        : ([
+            ["startDate", "Start date"],
+            ["endDate", "End date"],
+          ] as const);
+    for (const [field, label] of dates) {
+      // Keep historical records editable without permitting newly backdated dates.
+      const unchanged =
+        previous?.type === entry.type && previous[field] === entry[field];
+      if (entry[field] && entry[field] < today && !unchanged)
+        ctx.addIssue({
+          code: "custom",
+          path: [field],
+          message: `${label} cannot be in the past. Choose today or a future date.`,
+        });
+    }
+  });
+}
 export type Attachment = {
   id: string;
   name: string;

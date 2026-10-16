@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, PROVINCES, type Category } from "@/lib/constants";
 import { api, RequestError } from "@/lib/api";
-import { isoDay, addDays, inRange } from "@/lib/dates";
+import { isoDay, addDays, inRange, calendarToday } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
 import { EntryForm } from "@/features/entries/entry-form";
 import {
@@ -52,7 +52,7 @@ export function Workspace({
   const [view, setView] = useState<"month" | "week" | "list">("month");
   const [province, setProvince] = useState("all");
   const [destination, setDestination] = useState("all");
-  const [anchor, setAnchor] = useState(() => isoDay(new Date()));
+  const [anchor, setAnchor] = useState(() => calendarToday());
   const [selected, setSelected] = useState<string | null>(
     initialEntryId || null,
   );
@@ -306,7 +306,7 @@ export function Workspace({
                   onClick={() =>
                     setForm({
                       type: category === "all" ? "market" : category,
-                      day: anchor,
+                      day: anchor < calendarToday() ? calendarToday() : anchor,
                     })
                   }
                 >
@@ -373,7 +373,7 @@ export function Workspace({
                     </h2>
                     <Button
                       variant="secondary"
-                      onClick={() => setAnchor(isoDay(new Date()))}
+                      onClick={() => setAnchor(calendarToday())}
                     >
                       Today
                     </Button>
@@ -495,19 +495,25 @@ export function Workspace({
                     anchor={anchor}
                     view={view}
                     onOpen={(entry) => setSelected(entry.id)}
-                    onAdd={(day) =>
+                    onAdd={(day) => {
+                      if (day < calendarToday()) {
+                        setMessage(
+                          "Entries can only be added for today or a future date.",
+                        );
+                        return;
+                      }
                       setForm({
                         type: category === "all" ? "market" : category,
                         day,
-                      })
-                    }
+                      });
+                    }}
                   />
                 )}
                 <footer className="calendar-foot">
                   <span>
                     {view === "week"
                       ? "Dates and times follow each entry’s selected time zone."
-                      : "Select a date to add an entry."}
+                      : "Select today or a future date to add an entry."}
                   </span>
                   <button onClick={() => reload(true)} disabled={loading}>
                     <RefreshCw size={12} />

@@ -5,7 +5,7 @@ import dayGridPlugin from "@fullcalendar/react/daygrid";
 import interactionPlugin from "@fullcalendar/react/interaction";
 import themePlugin from "@fullcalendar/react/themes/monarch";
 import { CATEGORIES } from "@/lib/constants";
-import { occurrences } from "@/lib/dates";
+import { occurrences, calendarToday } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
 const plugins = [themePlugin, dayGridPlugin, interactionPlugin];
 export function CalendarGrid({
@@ -47,6 +47,7 @@ export function CalendarGrid({
         plugins={plugins}
         initialView={view === "month" ? "dayGridMonth" : "dayGridWeek"}
         initialDate={anchor}
+        now={calendarToday()}
         headerToolbar={false}
         events={events}
         firstDay={1}
@@ -56,7 +57,9 @@ export function CalendarGrid({
         eventDisplay="block"
         displayEventTime={false}
         tableClass="calendar-table"
-        dayCellClass="calendar-day"
+        dayCellClass={(info) =>
+          `calendar-day ${info.isPast ? "past-calendar-day" : ""}`
+        }
         dayHeaderClass="calendar-day-header"
         eventClass={(info) =>
           `calendar-chip ${info.event.extendedProps.deadline === "callback" ? "callback" : info.event.extendedProps.entry.type}`

@@ -1,3 +1,4 @@
+export const CALENDAR_TIME_ZONE = "America/Edmonton";
 export const CATEGORIES = {
   market: {
     label: "BBG Market visits",
