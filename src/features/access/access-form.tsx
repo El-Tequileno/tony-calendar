@@ -28,7 +28,7 @@ export function AccessForm({ entryId }: { entryId?: string }) {
           <p className="eyebrow">CONNECTED PLANS. CLEARER DAYS.</p>
           <h1>
             Good things <br />
-            start with <br />a plan and <br />
+            start with <br />a plan and{" "}
             <em>El Tequileño.</em>
           </h1>
           <p>

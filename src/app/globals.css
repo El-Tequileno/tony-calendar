@@ -1315,6 +1315,9 @@ button:disabled:hover {
   margin: 27px 0;
 }
 .access-heading em {
+  display: block;
+  margin-top: 0.1em;
+  line-height: inherit;
   color: #c0bc94;
   font-weight: 400;
 }
@@ -1589,6 +1592,10 @@ button:disabled:hover {
   }
   .access-heading h1 br {
     display: none;
+  }
+  .access-heading h1 em {
+    display: inline;
+    margin-top: 0;
   }
   .access-main {
     padding: 32px 24px;
