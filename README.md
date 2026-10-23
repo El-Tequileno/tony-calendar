@@ -6,7 +6,7 @@ A shared planning workspace for Tony and Canadian distributors. Built with Next.
 
 - **BBG Market visits:** multiple grouped customer names, meeting purposes, and meeting locations.
 - **Casa Salles Visits:** visiting parties' Canadian provinces and a link to a separate agenda.
-- **Events in Canada:** venue name, address, Canadian postal code, Special Notes, activation terms, names, company, event logistics, and serving-alcohol certificates.
+- **Events in Canada:** venue name, address, Canadian postal code, Special Notes, activation terms, owner name and company, repeatable activation team names with phone numbers, event logistics, and serving-alcohol certificates.
 - **Provincial tender calls:** destination grouping/filtering, repeated priority/specification rows, price range, and two linked deadline occurrences. No Call ID field.
 - Month, week, and list views; province filters; a destination filter for tenders.
 - Acknowledgments attached to the entered approved email, preserved through edits.

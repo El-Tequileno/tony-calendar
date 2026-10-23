@@ -64,8 +64,17 @@ function details(entry: Entry): Detail[] {
           ["Address", entry.address || entry.location],
           ["Postal code", entry.postalCode],
           ["Activation terms", entry.activationTerms],
-          ["Names", entry.peopleNames],
+          ["Owner Name", entry.ownerName],
           ["Company", entry.company],
+          [
+            "Activation Team Name(s) and phone",
+            entry.activationTeam
+              .filter((member) => member.name || member.phone)
+              .map((member) =>
+                member.phone ? `${member.name} — ${member.phone}` : member.name,
+              )
+              .join("\n"),
+          ],
           ["Attendance", entry.attendance],
           ["Setup", entry.setup],
           ["Products", entry.products],

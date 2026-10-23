@@ -86,8 +86,14 @@ export const entrySchema = z
       .default(""),
     specialNotes: text,
     activationTerms: text,
-    peopleNames: text,
+    ownerName: text,
     company: text,
+    activationTeam: z
+      .array(
+        z.object({ name: text, phone: z.string().trim().max(50).default("") }),
+      )
+      .max(50)
+      .default([]),
     attendance: text,
     setup: text,
     products: text,
@@ -150,9 +156,31 @@ export const entrySchema = z
         (!entry.customers.length || entry.customers.some((c) => !c.name))
       )
         error("customers", "Enter a name for each customer");
+      if (
+        entry.type === "event" &&
+        entry.activationTeam.some((m) => m.phone && !m.name)
+      )
+        error(
+          "activationTeam",
+          "Enter a name for each activation team phone number",
+        );
     }
   });
 export type EntryInput = z.infer<typeof entrySchema>;
+export function eventContactFields(
+  data: {
+    ownerName?: string;
+    activationTeam?: EntryInput["activationTeam"];
+    peopleNames?: string;
+  },
+) {
+  return {
+    ownerName: data.ownerName || "",
+    activationTeam:
+      data.activationTeam ??
+      (data.peopleNames ? [{ name: data.peopleNames, phone: "" }] : []),
+  };
+}
 type Schedule = Pick<
   EntryInput,
   | "type"
@@ -229,8 +257,9 @@ export function emptyEntry(type: EntryInput["type"], day: string): EntryInput {
     postalCode: "",
     specialNotes: "",
     activationTerms: "",
-    peopleNames: "",
+    ownerName: "",
     company: "",
+    activationTeam: type === "event" ? [{ name: "", phone: "" }] : [],
     attendance: "",
     setup: "",
     products: "",

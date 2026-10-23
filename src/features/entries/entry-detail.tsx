@@ -237,8 +237,21 @@ export function EntryDetail({
                 <Item label="Customer" value={entry.customer} />
                 <Item label="Activation terms" value={entry.activationTerms} />
                 <div className="detail-grid">
-                  <Item label="Names" value={entry.peopleNames} />
+                  <Item label="Owner Name" value={entry.ownerName} />
                   <Item label="Company" value={entry.company} />
+                </div>
+                <Item
+                  label="Activation Team Name(s) and phone"
+                  value={entry.activationTeam
+                    .filter((member) => member.name || member.phone)
+                    .map((member) =>
+                      member.phone
+                        ? `${member.name} — ${member.phone}`
+                        : member.name,
+                    )
+                    .join("\n")}
+                />
+                <div className="detail-grid">
                   <Item label="Expected attendance" value={entry.attendance} />
                   <Item label="Setup / teardown" value={entry.setup} />
                 </div>

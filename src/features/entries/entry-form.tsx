@@ -56,9 +56,21 @@ export function EntryForm({
   const initialDay = day < today ? today : day;
   const form = useForm<EntryInput>({
     resolver: zodResolver(entryWriteSchema(savedEntry)) as Resolver<EntryInput>,
-    defaultValues: entry || emptyEntry(type, initialDay),
+    defaultValues: entry
+      ? {
+          ...entry,
+          activationTeam:
+            entry.type === "event" && !entry.activationTeam.length
+              ? [{ name: "", phone: "" }]
+              : entry.activationTeam,
+        }
+      : emptyEntry(type, initialDay),
   });
   const customers = useFieldArray({ control: form.control, name: "customers" });
+  const activationTeam = useFieldArray({
+    control: form.control,
+    name: "activationTeam",
+  });
   const requirements = useFieldArray({
     control: form.control,
     name: "requirements",
@@ -138,6 +150,9 @@ export function EntryForm({
   const submit = form.handleSubmit(
     async (data) => {
       if (data.type === "event") data.location = "";
+      data.activationTeam = data.activationTeam.filter(
+        (member) => member.name || member.phone,
+      );
       setBusy(true);
       setError("");
       try {
@@ -400,16 +415,57 @@ export function EntryForm({
                     {field("activationTerms", "Activation terms", "textarea", {
                       full: true,
                     })}
-                    {field("peopleNames", "Names")}
+                    {field("ownerName", "Owner Name")}
                     {field("company", "Company")}
+                  </>
+                )}
+              </div>
+              {category === "event" && (
+                <>
+                  <div className="customers-editor">
+                    {activationTeam.fields.map((member, index) => (
+                      <fieldset className="customer-card" key={member.id}>
+                        <legend>Activation team member {index + 1}</legend>
+                        <div className="form-grid">
+                          {field(
+                            `activationTeam.${index}.name`,
+                            "Activation Team Name(s)",
+                          )}
+                          {field(
+                            `activationTeam.${index}.phone`,
+                            "Phone",
+                            "tel",
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          className="remove-button"
+                          aria-label={`Remove activation team member ${index + 1}`}
+                          onClick={() => activationTeam.remove(index)}
+                        >
+                          <Trash2 size={13} />
+                          Remove member
+                        </Button>
+                      </fieldset>
+                    ))}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    disabled={activationTeam.fields.length >= 50}
+                    onClick={() =>
+                      activationTeam.append({ name: "", phone: "" })
+                    }
+                  >
+                    <Plus size={14} />
+                    Add member
+                  </Button>
+                  <div className="form-grid mt-5">
                     {field("setup", "Setup / teardown", "text", { full: true })}
                     {field(
                       "products",
                       "Products and serving plan",
                       "textarea",
-                      {
-                        full: true,
-                      },
+                      { full: true },
                     )}
                     {field("equipment", "Equipment and materials", "textarea", {
                       full: true,
@@ -417,9 +473,9 @@ export function EntryForm({
                     {field("specialNotes", "Special Notes", "textarea", {
                       full: true,
                     })}
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
               {category === "market" && (
                 <>
                   <div className="customers-editor">

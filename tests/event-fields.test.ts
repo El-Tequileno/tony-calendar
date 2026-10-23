@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { entryFixtures } from "./fixtures";
-import { entrySchema } from "../src/lib/validation";
+import { entrySchema, eventContactFields } from "../src/lib/validation";
 import { invitationText } from "../src/lib/invitation";
 import { parseAddressResults } from "../src/lib/addresses";
 describe("Canadian event venue fields", () => {
@@ -34,6 +34,43 @@ describe("Canadian event venue fields", () => {
       expect(entrySchema.safeParse({ ...entry, postalCode }).success).toBe(
         false,
       );
+  });
+  it("keeps each activation team name paired with its phone in saved data and invitations", () => {
+    const entry = {
+      ...entryFixtures()[2],
+      ...entrySchema.parse({
+        ...entryFixtures()[2],
+        ownerName: "Morgan Lee",
+        company: "Example Co",
+        activationTeam: [
+          { name: "Avery", phone: "403-555-0101" },
+          { name: "Jordan", phone: "780-555-0102" },
+        ],
+      }),
+    };
+    expect(entry.activationTeam).toHaveLength(2);
+    const text = invitationText(entry, "https://calendar.example");
+    expect(text).toContain("Owner Name: Morgan Lee");
+    expect(text).toContain("Company: Example Co");
+    expect(text).toContain("Avery — 403-555-0101\nJordan — 780-555-0102");
+    expect(
+      entrySchema.safeParse({
+        ...entry,
+        activationTeam: [{ name: "", phone: "403-555-0101" }],
+      }).success,
+    ).toBe(false);
+  });
+  it("shows the old Names value as an activation team member when loading an older event", () => {
+    expect(eventContactFields({ peopleNames: "Avery" })).toEqual({
+      ownerName: "",
+      activationTeam: [{ name: "Avery", phone: "" }],
+    });
+    expect(
+      eventContactFields({
+        peopleNames: "Avery",
+        activationTeam: [],
+      }).activationTeam,
+    ).toEqual([]);
   });
 });
 describe("Canadian address results", () => {

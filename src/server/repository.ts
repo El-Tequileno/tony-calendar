@@ -4,6 +4,7 @@ import { db } from "../db/client";
 import * as tables from "../db/schema";
 import {
   entryWriteSchema,
+  eventContactFields,
   type Attachment,
   type Entry,
   type EntryInput,
@@ -32,6 +33,9 @@ export async function listEntries(): Promise<Entry[]> {
       row.data.address ?? (row.type === "event" ? row.data.location || "" : ""),
     postalCode: row.data.postalCode || "",
     specialNotes: row.data.specialNotes || "",
+    ...eventContactFields(
+      row.data as typeof row.data & { peopleNames?: string },
+    ),
     type: row.type,
     id: row.id,
     revision: row.revision,
