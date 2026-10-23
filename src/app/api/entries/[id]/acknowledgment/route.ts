@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protect, endpoint, jsonBody } from "@/server/http";
+import { protectPersonalAction, endpoint, jsonBody } from "@/server/http";
 import { acknowledge, consumeLimit } from "@/server/repository";
 export const runtime = "nodejs";
 export async function POST(
@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   return endpoint(async () => {
-    const email = await protect(request, true);
+    const email = await protectPersonalAction(request);
     await consumeLimit(`write:${email}`, 120, 60000);
     const id = z
       .string()

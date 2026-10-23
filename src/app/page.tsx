@@ -25,6 +25,7 @@ export default async function Home({
     <Workspace
       email={person.email}
       isTony={person.isTony}
+      permission={person.permission}
       capabilities={capabilities()}
       initialEntryId={entryId}
     />

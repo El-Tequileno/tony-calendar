@@ -23,6 +23,11 @@ export async function PATCH(request: Request) {
     const tony = await protectTony(request, true);
     await consumeLimit(`people:${tony.email}`, 30, 60000);
     const input = updatePersonSchema.parse(await jsonBody(request));
-    return { person: await updatePerson(input.email, input.active) };
+    return {
+      person: await updatePerson(input.email, {
+        active: input.active,
+        permission: input.permission,
+      }),
+    };
   });
 }

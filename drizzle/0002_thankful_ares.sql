@@ -1,0 +1,3 @@
+ALTER TABLE "authorized_emails" ADD COLUMN "permission" text DEFAULT 'write' NOT NULL;--> statement-breakpoint
+ALTER TABLE "authorized_emails" ADD CONSTRAINT "authorized_emails_permission_valid" CHECK ("authorized_emails"."permission" in ('read', 'write'));--> statement-breakpoint
+ALTER TABLE "authorized_emails" ADD CONSTRAINT "authorized_emails_tony_write" CHECK (not "authorized_emails"."is_tony" or "authorized_emails"."permission" = 'write');

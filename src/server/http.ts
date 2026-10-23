@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { currentEmail, currentPerson } from "./session";
+import { currentPerson } from "./session";
 import { AppError } from "./errors";
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
@@ -12,13 +12,19 @@ export function sameOrigin(request: Request) {
 }
 export async function protect(request: Request, mutating = false) {
   if (mutating) sameOrigin(request);
-  const email = await currentEmail();
-  if (!email)
+  const person = await currentPerson();
+  if (!person)
     throw new AppError(
       "Your session ended. Please enter your approved email again.",
       401,
     );
-  return email;
+  if (mutating && !person.isTony && person.permission !== "write")
+    throw new AppError("You have read-only access to this calendar.", 403);
+  return person.email;
+}
+export async function protectPersonalAction(request: Request) {
+  sameOrigin(request);
+  return protect(request);
 }
 export async function protectTony(request: Request, mutating = false) {
   if (mutating) sameOrigin(request);

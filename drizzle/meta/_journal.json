@@ -15,6 +15,13 @@
       "when": 1792172801176,
       "tag": "0001_nosy_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792790306426,
+      "tag": "0002_thankful_ares",
+      "breakpoints": true
     }
   ]
 }

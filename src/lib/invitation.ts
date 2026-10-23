@@ -1,5 +1,5 @@
 import type { Entry } from "./validation";
-import { APP_NAME } from "./brand";
+import { APP_NAME, BRAND_LOGO } from "./brand";
 import { CATEGORIES, PROVINCES } from "./constants";
 import { formatDay } from "./dates";
 
@@ -24,11 +24,16 @@ function webUrl(value: string) {
     return null;
   }
 }
-function entryUrl(entry: Entry, origin: string) {
+function calendarOrigin(origin: string) {
   const url = webUrl(origin);
   if (!url) throw new Error("A valid calendar URL is required.");
-  return new URL(`/?entry=${encodeURIComponent(entry.id)}`, new URL(url).origin)
-    .href;
+  return new URL(url).origin;
+}
+function entryUrl(entry: Entry, origin: string) {
+  return new URL(
+    `/?entry=${encodeURIComponent(entry.id)}`,
+    calendarOrigin(origin),
+  ).href;
 }
 function details(entry: Entry): Detail[] {
   return [
@@ -131,6 +136,7 @@ function group(title: string, content: string) {
 
 // Shared by the sent email and its in-app preview. All entry text is escaped.
 export function invitationBodyHtml(entry: Entry, origin: string) {
+  const logoUrl = new URL(BRAND_LOGO, calendarOrigin(origin)).href;
   const customers =
     entry.type === "market"
       ? entry.customers
@@ -158,7 +164,7 @@ export function invitationBodyHtml(entry: Entry, origin: string) {
       : "";
   const agenda = entry.type === "distillery" ? webUrl(entry.agenda) : null;
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f5ef;font-family:Arial,Helvetica,sans-serif;line-height:1.6"><tr><td align="center" style="padding:24px 12px"><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;border-collapse:collapse;background-color:#ffffff">
-<tr><td style="background-color:#233e38;padding:24px;color:#ffffff;font-size:17px;font-weight:bold">${escape(APP_NAME)}</td></tr>
+<tr><td align="center" style="background-color:#233e38;padding:24px;color:#ffffff;font-size:17px;font-weight:bold"><img src="${escape(logoUrl)}" width="132" height="132" alt="Tequila El Tequileño" style="display:block;width:132px;height:132px;border:0;margin:0 auto 12px" /><div>${escape(APP_NAME)}</div></td></tr>
 <tr><td style="padding:28px 24px"><p style="margin:0 0 8px;color:#78876e;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase">${escape(CATEGORIES[entry.type].singular)}</p><h1 style="font-family:Georgia,serif;font-size:28px;line-height:1.25;color:#233e38;margin:0 0 24px;word-break:break-word">${lines(entry.title)}</h1>
 ${detailTable(details(entry))}${customers}${requirements}
 ${agenda ? `<p style="margin:24px 0 0"><a href="${escape(agenda)}" target="_blank" rel="noopener noreferrer" style="font-size:14px;color:#326756;text-decoration:underline">Open visit agenda →</a></p>` : ""}

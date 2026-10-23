@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { UserPlus, ShieldCheck, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, RequestError } from "@/lib/api";
-import type { Person } from "@/lib/people";
+import type { Person, Permission } from "@/lib/people";
 import { useRouter } from "next/navigation";
 export function PeopleSection({
   onMessage,
@@ -17,6 +17,7 @@ export function PeopleSection({
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [permission, setPermission] = useState<Permission>("write");
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -64,13 +65,37 @@ export function PeopleSection({
       setBusy(false);
     }
   }
+  async function changePermission(person: Person, permission: Permission) {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ person: Person }>("/api/people", {
+        method: "PATCH",
+        body: JSON.stringify({ email: person.email, permission }),
+      });
+      setPeople((list) =>
+        list.map((p) => (p.email === person.email ? result.person : p)),
+      );
+      onMessage(
+        permission === "write"
+          ? "Write access granted."
+          : "Read-only access set.",
+      );
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Unable to update permission.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <>
       <div className="page-heading">
         <div>
           <p className="eyebrow">WORKSPACE ACCESS</p>
           <h1>People</h1>
-          <p>Manage the people who can view and edit the full calendar.</p>
+          <p>Choose who can view the calendar and who can make changes.</p>
         </div>
         <span className="owner-pill">
           <ShieldCheck size={15} />
@@ -95,11 +120,12 @@ export function PeopleSection({
               try {
                 const result = await api<{ person: Person }>("/api/people", {
                   method: "POST",
-                  body: JSON.stringify({ name, email }),
+                  body: JSON.stringify({ name, email, permission }),
                 });
                 setPeople((list) => [...list, result.person]);
                 setName("");
                 setEmail("");
+                setPermission("write");
                 onMessage(
                   "Person added. Their email can now access the calendar.",
                 );
@@ -136,6 +162,22 @@ export function PeopleSection({
                 placeholder="person@company.com"
               />
             </label>
+            <label className="field">
+              <span>Permission</span>
+              <select
+                value={permission}
+                onChange={(event) =>
+                  setPermission(event.target.value as Permission)
+                }
+              >
+                <option value="read">Read only</option>
+                <option value="write">Read and write</option>
+              </select>
+              <small>
+                Read can view and acknowledge entries. Write can also change
+                entries, upload files, and send invitations.
+              </small>
+            </label>
             <Button type="submit" disabled={busy || loading}>
               <UserPlus size={15} />
               {busy ? "Saving…" : "Add person"}
@@ -166,10 +208,12 @@ export function PeopleSection({
                     <span>{person.email}</span>
                     <small>
                       {person.isTony
-                        ? "Tony · manages people"
+                        ? "Tony · write access · manages people"
                         : person.active
-                          ? "Calendar access"
-                          : "Access disabled"}
+                          ? person.permission === "write"
+                            ? "Read and write access"
+                            : "Read-only access"
+                          : `Access disabled · ${person.permission === "write" ? "Read and write" : "Read only"}`}
                     </small>
                   </div>
                   {person.isTony ? (
@@ -178,14 +222,33 @@ export function PeopleSection({
                       Tony
                     </span>
                   ) : (
-                    <Button
-                      variant="secondary"
-                      disabled={busy}
-                      onClick={() => toggle(person)}
-                      aria-label={`${person.active ? "Disable" : "Restore"} access for ${person.email}`}
-                    >
-                      {person.active ? "Disable access" : "Restore access"}
-                    </Button>
+                    <>
+                      <label className="field person-permission">
+                        <span>Permission</span>
+                        <select
+                          aria-label={`Permission for ${person.email}`}
+                          value={person.permission}
+                          disabled={busy}
+                          onChange={(event) =>
+                            changePermission(
+                              person,
+                              event.target.value as Permission,
+                            )
+                          }
+                        >
+                          <option value="read">Read only</option>
+                          <option value="write">Read and write</option>
+                        </select>
+                      </label>
+                      <Button
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => toggle(person)}
+                        aria-label={`${person.active ? "Disable" : "Restore"} access for ${person.email}`}
+                      >
+                        {person.active ? "Disable access" : "Restore access"}
+                      </Button>
+                    </>
                   )}
                 </li>
               ))}

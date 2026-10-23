@@ -19,6 +19,7 @@ import { CATEGORIES, PROVINCES, type Category } from "@/lib/constants";
 import { api, RequestError } from "@/lib/api";
 import { isoDay, addDays, inRange, calendarToday } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
+import type { Person, Permission } from "@/lib/people";
 import { EntryForm } from "@/features/entries/entry-form";
 import {
   EntryDetail,
@@ -38,11 +39,13 @@ type FormState = { entry?: Entry; type: Category; day: string };
 export function Workspace({
   email,
   isTony,
+  permission,
   capabilities,
   initialEntryId,
 }: {
   email: string;
   isTony: boolean;
+  permission: Permission;
   capabilities: Capabilities;
   initialEntryId?: string;
 }) {
@@ -59,6 +62,7 @@ export function Workspace({
   const [form, setForm] = useState<FormState | null>(null);
   const [menu, setMenu] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [canWrite, setCanWrite] = useState(isTony || permission === "write");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -67,7 +71,15 @@ export function Workspace({
     async (silent = false) => {
       if (!silent) setLoading(true);
       try {
-        const result = await api<{ entries: Entry[] }>("/api/entries");
+        const [result, session] = await Promise.all([
+          api<{ entries: Entry[] }>("/api/entries"),
+          api<{ person: Person | null }>("/api/session"),
+        ]);
+        if (!session.person) throw new RequestError("Your session ended.", 401);
+        const writable =
+          session.person.isTony || session.person.permission === "write";
+        setCanWrite(writable);
+        if (!writable) setForm(null);
         setEntries(result.entries);
         setError("");
         setRefreshed(
@@ -283,7 +295,7 @@ export function Workspace({
           </div>
           <span className="connection-pill">
             <i />
-            Shared workspace
+            {canWrite ? "Shared workspace" : "Read-only workspace"}
           </span>
         </header>
         <main className="content">
@@ -301,18 +313,21 @@ export function Workspace({
                       : CATEGORIES[category].description}
                   </p>
                 </div>
-                <Button
-                  disabled={loading || !!error}
-                  onClick={() =>
-                    setForm({
-                      type: category === "all" ? "market" : category,
-                      day: anchor < calendarToday() ? calendarToday() : anchor,
-                    })
-                  }
-                >
-                  <Plus size={17} />
-                  New entry
-                </Button>
+                {canWrite && (
+                  <Button
+                    disabled={loading || !!error}
+                    onClick={() =>
+                      setForm({
+                        type: category === "all" ? "market" : category,
+                        day:
+                          anchor < calendarToday() ? calendarToday() : anchor,
+                      })
+                    }
+                  >
+                    <Plus size={17} />
+                    New entry
+                  </Button>
+                )}
               </div>
               <div
                 className={`summary-row ${category !== "all" ? "single" : ""}`}
@@ -487,6 +502,7 @@ export function Workspace({
                     start={rangeStart}
                     end={rangeEnd}
                     tenders={category === "tender"}
+                    canWrite={canWrite}
                     onOpen={(entry) => setSelected(entry.id)}
                   />
                 ) : (
@@ -495,25 +511,31 @@ export function Workspace({
                     anchor={anchor}
                     view={view}
                     onOpen={(entry) => setSelected(entry.id)}
-                    onAdd={(day) => {
-                      if (day < calendarToday()) {
-                        setMessage(
-                          "Entries can only be added for today or a future date.",
-                        );
-                        return;
-                      }
-                      setForm({
-                        type: category === "all" ? "market" : category,
-                        day,
-                      });
-                    }}
+                    onAdd={
+                      canWrite
+                        ? (day) => {
+                            if (day < calendarToday()) {
+                              setMessage(
+                                "Entries can only be added for today or a future date.",
+                              );
+                              return;
+                            }
+                            setForm({
+                              type: category === "all" ? "market" : category,
+                              day,
+                            });
+                          }
+                        : undefined
+                    }
                   />
                 )}
                 <footer className="calendar-foot">
                   <span>
                     {view === "week"
                       ? "Dates and times follow each entry’s selected time zone."
-                      : "Select today or a future date to add an entry."}
+                      : canWrite
+                        ? "Select today or a future date to add an entry."
+                        : "Select an entry to view its details."}
                   </span>
                   <button onClick={() => reload(true)} disabled={loading}>
                     <RefreshCw size={12} />
@@ -525,7 +547,7 @@ export function Workspace({
           )}
         </main>
       </div>
-      {form ? (
+      {form && canWrite ? (
         <EntryForm
           key={form.entry?.id || `${form.type}-${form.day}`}
           entry={form.entry}
@@ -554,6 +576,7 @@ export function Workspace({
           key={current.id}
           entry={current}
           email={email}
+          canWrite={canWrite}
           capabilities={capabilities}
           onClose={() => setSelected(null)}
           onEdit={() =>

@@ -3,6 +3,14 @@ import { invitationHtml, invitationText } from "../src/lib/invitation";
 import { entryFixtures } from "./fixtures";
 
 describe("invitation email formatting", () => {
+  it("shows the public El Tequileño logo above the invitation content", () => {
+    const html = invitationHtml(entryFixtures()[0], "https://calendar.example");
+    const logo =
+      '<img src="https://calendar.example/brand/el-tequileno-white.png"';
+    expect(html).toContain(logo);
+    expect(html).toContain('alt="Tequila El Tequileño"');
+    expect(html.indexOf(logo)).toBeLessThan(html.indexOf("<h1"));
+  });
   it("keeps dates separate from start/end times and the time zone in HTML and plain text", () => {
     const entry = {
       ...entryFixtures()[2],
@@ -66,7 +74,7 @@ describe("invitation email formatting", () => {
     const html = invitationHtml(entry, "https://calendar.example");
     expect(html).toContain("&lt;img");
     expect(html).toContain("&lt;script&gt;");
-    expect(html).not.toContain("<img");
+    expect(html).not.toContain('<img src=x onerror="alert(1)"');
     expect(html).not.toContain("<script>");
     expect(html).not.toContain("javascript:");
   });

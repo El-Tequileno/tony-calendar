@@ -8,19 +8,25 @@ export function EntryList({
   start,
   end,
   tenders,
+  canWrite,
   onOpen,
 }: {
   entries: Entry[];
   start: string;
   end: string;
   tenders: boolean;
+  canWrite: boolean;
   onOpen: (entry: Entry) => void;
 }) {
   if (!entries.length)
     return (
       <div className="empty-state">
         <h3>No entries in this view</h3>
-        <p>Try another month or filter, or add a new entry.</p>
+        <p>
+          {canWrite
+            ? "Try another month or filter, or add a new entry."
+            : "Try another month or filter."}
+        </p>
       </div>
     );
   if (tenders) {

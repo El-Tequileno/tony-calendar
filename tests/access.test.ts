@@ -29,6 +29,7 @@ const person: Person = {
   name: "Person",
   active: true,
   isTony: false,
+  permission: "write",
   createdAt: new Date(0).toISOString(),
 };
 function request(
@@ -84,18 +85,34 @@ describe("People authorization", () => {
     expect(
       (
         await POST(
-          request("POST", { email: " PERSON@example.com ", name: "Person" }),
+          request("POST", {
+            email: " PERSON@example.com ",
+            name: "Person",
+            permission: "read",
+          }),
         )
       ).status,
     ).toBe(200);
     expect(mocks.addPerson).toHaveBeenCalledWith({
       email: person.email,
       name: "Person",
+      permission: "read",
     });
     expect(
       (await PATCH(request("PATCH", { email: person.email, active: false })))
         .status,
     ).toBe(200);
+    expect(
+      (
+        await PATCH(
+          request("PATCH", { email: person.email, permission: "read" }),
+        )
+      ).status,
+    ).toBe(200);
+    expect(mocks.updatePerson).toHaveBeenCalledWith(person.email, {
+      active: undefined,
+      permission: "read",
+    });
     expect(
       (
         await POST(
@@ -114,6 +131,7 @@ describe("People validation", () => {
     expect(addPersonSchema.parse({ email: " PERSON@Example.com " })).toEqual({
       email: person.email,
       name: "",
+      permission: "write",
     });
     expect(
       addPersonSchema.safeParse({ email: person.email, isTony: true }).success,
@@ -129,5 +147,16 @@ describe("People validation", () => {
       updatePersonSchema.safeParse({ email: person.email, active: "false" })
         .success,
     ).toBe(false);
+    expect(
+      updatePersonSchema.safeParse({ email: person.email, permission: "read" })
+        .success,
+    ).toBe(true);
+    expect(
+      updatePersonSchema.safeParse({ email: person.email, permission: "admin" })
+        .success,
+    ).toBe(false);
+    expect(updatePersonSchema.safeParse({ email: person.email }).success).toBe(
+      false,
+    );
   });
 });

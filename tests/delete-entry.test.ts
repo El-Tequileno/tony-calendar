@@ -1,14 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppError } from "../src/server/errors";
 const mocks = vi.hoisted(() => ({
-  currentEmail: vi.fn(),
+  currentPerson: vi.fn(),
   deleteEntry: vi.fn(),
   consumeLimit: vi.fn(),
   deleteStoredFile: vi.fn(),
 }));
 vi.mock("@/server/session", () => ({
-  currentEmail: mocks.currentEmail,
-  currentPerson: vi.fn(),
+  currentPerson: mocks.currentPerson,
 }));
 vi.mock("@/server/repository", () => ({
   deleteEntry: mocks.deleteEntry,
@@ -34,18 +33,35 @@ function request(
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubEnv("APP_URL", "http://localhost:3000");
-  mocks.currentEmail.mockResolvedValue("person@example.com");
+  mocks.currentPerson.mockResolvedValue({
+    email: "person@example.com",
+    isTony: false,
+    permission: "write",
+  });
   mocks.deleteEntry.mockResolvedValue([]);
 });
 describe("entry deletion", () => {
   it("requires an active session and the correct origin", async () => {
-    mocks.currentEmail.mockResolvedValue(null);
+    mocks.currentPerson.mockResolvedValue(null);
     expect((await DELETE(request(), context)).status).toBe(401);
-    mocks.currentEmail.mockResolvedValue("person@example.com");
+    mocks.currentPerson.mockResolvedValue({
+      email: "person@example.com",
+      isTony: false,
+      permission: "write",
+    });
     expect(
       (await DELETE(request(undefined, "https://other.example.com"), context))
         .status,
     ).toBe(403);
+    expect(mocks.deleteEntry).not.toHaveBeenCalled();
+  });
+  it("blocks read-only people before deleting an entry", async () => {
+    mocks.currentPerson.mockResolvedValue({
+      email: "person@example.com",
+      isTony: false,
+      permission: "read",
+    });
+    expect((await DELETE(request(), context)).status).toBe(403);
     expect(mocks.deleteEntry).not.toHaveBeenCalled();
   });
   it("requires an explicit valid revision and entry ID", async () => {

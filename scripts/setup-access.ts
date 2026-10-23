@@ -18,7 +18,13 @@ async function main() {
       throw new Error("An owner is already configured.");
     await tx
       .insert(authorizedEmails)
-      .values({ email, name: "Tony", isTony: true, active: true })
+      .values({
+        email,
+        name: "Tony",
+        isTony: true,
+        active: true,
+        permission: "write",
+      })
       .onConflictDoNothing();
     const [person] = await tx
       .select()
@@ -27,7 +33,12 @@ async function main() {
     if (person && !person.isTony)
       await tx
         .update(authorizedEmails)
-        .set({ isTony: true, active: true, name: person.name || "Tony" })
+        .set({
+          isTony: true,
+          active: true,
+          permission: "write",
+          name: person.name || "Tony",
+        })
         .where(eq(authorizedEmails.email, email));
   });
   console.log(

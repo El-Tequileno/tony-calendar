@@ -1,5 +1,6 @@
-import nextEnv from "@next/env";
-const { loadEnvConfig } = nextEnv;
+import * as nextEnv from "@next/env";
+const envModule = nextEnv as typeof nextEnv & { default?: typeof nextEnv };
+const { loadEnvConfig } = envModule.default ?? envModule;
 import { defineConfig } from "drizzle-kit";
 loadEnvConfig(process.cwd());
 export default defineConfig({

@@ -19,7 +19,7 @@ export function CalendarGrid({
   anchor: string;
   view: "month" | "week";
   onOpen: (entry: Entry) => void;
-  onAdd: (day: string) => void;
+  onAdd?: (day: string) => void;
 }) {
   const events = useMemo(
     () =>
@@ -58,14 +58,16 @@ export function CalendarGrid({
         displayEventTime={false}
         tableClass="calendar-table"
         dayCellClass={(info) =>
-          `calendar-day ${info.isPast ? "past-calendar-day" : ""}`
+          `calendar-day ${info.isPast ? "past-calendar-day" : ""} ${onAdd ? "" : "read-only-calendar-day"}`
         }
         dayHeaderClass="calendar-day-header"
         eventClass={(info) =>
           `calendar-chip ${info.event.extendedProps.deadline === "callback" ? "callback" : info.event.extendedProps.entry.type}`
         }
         eventClick={(info) => onOpen(info.event.extendedProps.entry as Entry)}
-        dateClick={(info) => onAdd(info.dateStr.slice(0, 10))}
+        dateClick={
+          onAdd ? (info) => onAdd(info.dateStr.slice(0, 10)) : undefined
+        }
         eventContent={(info) => {
           const entry = info.event.extendedProps.entry as Entry;
           const deadline = info.event.extendedProps.deadline;

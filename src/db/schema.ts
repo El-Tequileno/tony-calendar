@@ -20,6 +20,10 @@ export const authorizedEmails = pgTable(
     name: text("name").notNull().default(""),
     isTony: boolean("is_tony").notNull().default(false),
     active: boolean("active").notNull().default(true),
+    permission: text("permission")
+      .$type<"read" | "write">()
+      .notNull()
+      .default("write"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -35,6 +39,14 @@ export const authorizedEmails = pgTable(
     check(
       "authorized_emails_tony_active",
       sql`not ${table.isTony} or ${table.active}`,
+    ),
+    check(
+      "authorized_emails_permission_valid",
+      sql`${table.permission} in ('read', 'write')`,
+    ),
+    check(
+      "authorized_emails_tony_write",
+      sql`not ${table.isTony} or ${table.permission} = 'write'`,
     ),
   ],
 );

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ExternalLink,
   Mail,
@@ -50,6 +50,7 @@ function Group({
 export function EntryDetail({
   entry,
   email,
+  canWrite,
   capabilities,
   onClose,
   onEdit,
@@ -59,6 +60,7 @@ export function EntryDetail({
 }: {
   entry: Entry;
   email: string;
+  canWrite: boolean;
   capabilities: Capabilities;
   onClose: () => void;
   onEdit: () => void;
@@ -73,7 +75,33 @@ export function EntryDetail({
   const [deleteTarget, setDeleteTarget] = useState<Entry | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  async function acknowledge(checked: boolean) {
+  const [ackPrompt, setAckPrompt] = useState(false);
+  const acknowledged = entry.acknowledgments.includes(email);
+  useEffect(() => {
+    if (!canWrite) {
+      setPreview(false);
+      setDeleteTarget(null);
+    }
+  }, [canWrite]);
+  useEffect(() => {
+    if (acknowledged) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [acknowledged]);
+  function tryClose() {
+    if (busy || sending || deleting) return;
+    if (acknowledged) {
+      onClose();
+      return;
+    }
+    setError("");
+    setAckPrompt(true);
+  }
+  async function acknowledge(checked: boolean): Promise<boolean> {
     setBusy(true);
     setError("");
     try {
@@ -82,12 +110,14 @@ export function EntryDetail({
         { method: "POST", body: JSON.stringify({ checked }) },
       );
       onUpdated(updated);
+      return true;
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
           : "Unable to save acknowledgment.",
       );
+      return false;
     } finally {
       setBusy(false);
     }
@@ -97,35 +127,37 @@ export function EntryDetail({
     <>
       <Panel
         open
-        onClose={onClose}
+        onClose={tryClose}
         title={entry.title}
         eyebrow="CALENDAR ENTRY"
         footer={
-          <>
-            <Button
-              variant="secondary"
-              className="entry-delete-button"
-              disabled={busy || sending}
-              onClick={() => {
-                setDeleteError("");
-                setDeleteTarget(entry);
-              }}
-            >
-              <Trash2 size={14} />
-              Delete entry
-            </Button>
-            <Button variant="secondary" onClick={onEdit}>
-              <Pencil size={14} />
-              Edit entry
-            </Button>
-            <Button
-              disabled={!entry.emails.length}
-              onClick={() => setPreview(true)}
-            >
-              <Mail size={14} />
-              Invite by email
-            </Button>
-          </>
+          canWrite ? (
+            <>
+              <Button
+                variant="secondary"
+                className="entry-delete-button"
+                disabled={busy || sending}
+                onClick={() => {
+                  setDeleteError("");
+                  setDeleteTarget(entry);
+                }}
+              >
+                <Trash2 size={14} />
+                Delete entry
+              </Button>
+              <Button variant="secondary" onClick={onEdit}>
+                <Pencil size={14} />
+                Edit entry
+              </Button>
+              <Button
+                disabled={!entry.emails.length}
+                onClick={() => setPreview(true)}
+              >
+                <Mail size={14} />
+                Invite by email
+              </Button>
+            </>
+          ) : undefined
         }
       >
         <span
@@ -284,69 +316,71 @@ export function EntryDetail({
                   No documents or certificates uploaded yet.
                 </p>
               )}
-              <label
-                className={`upload-zone ${!capabilities.uploads ? "disabled" : ""}`}
-              >
-                <Upload size={18} />
-                <span>
-                  {busy ? "Uploading…" : "Upload documents or photos"}
-                  <small>
-                    {UPLOAD_FORMATS} · 4 MB each · {MAX_ATTACHMENTS} files per
-                    event
-                  </small>
-                </span>
-                <input
-                  aria-label="Upload event documents or certificates"
-                  type="file"
-                  multiple
-                  accept={UPLOAD_ACCEPT}
-                  disabled={
-                    busy ||
-                    !capabilities.uploads ||
-                    entry.attachments.length >= MAX_ATTACHMENTS
-                  }
-                  onChange={async (event) => {
-                    const files = Array.from(event.target.files || []);
-                    event.target.value = "";
-                    if (!files.length) return;
-                    const message = fileSelectionError(
-                      files,
-                      MAX_ATTACHMENTS - entry.attachments.length,
-                    );
-                    if (message) {
-                      setError(message);
-                      return;
+              {canWrite && (
+                <label
+                  className={`upload-zone ${!capabilities.uploads ? "disabled" : ""}`}
+                >
+                  <Upload size={18} />
+                  <span>
+                    {busy ? "Uploading…" : "Upload documents or photos"}
+                    <small>
+                      {UPLOAD_FORMATS} · 4 MB each · {MAX_ATTACHMENTS} files per
+                      event
+                    </small>
+                  </span>
+                  <input
+                    aria-label="Upload event documents or certificates"
+                    type="file"
+                    multiple
+                    accept={UPLOAD_ACCEPT}
+                    disabled={
+                      busy ||
+                      !capabilities.uploads ||
+                      entry.attachments.length >= MAX_ATTACHMENTS
                     }
-                    setError("");
-                    setBusy(true);
-                    try {
-                      for (const file of files) {
-                        const data = new FormData();
-                        data.set("file", file);
-                        const result = await api<{ entry: Entry }>(
-                          `/api/entries/${entry.id}/attachments`,
-                          { method: "POST", body: data },
-                        );
-                        onUpdated(result.entry);
+                    onChange={async (event) => {
+                      const files = Array.from(event.target.files || []);
+                      event.target.value = "";
+                      if (!files.length) return;
+                      const message = fileSelectionError(
+                        files,
+                        MAX_ATTACHMENTS - entry.attachments.length,
+                      );
+                      if (message) {
+                        setError(message);
+                        return;
                       }
-                      onMessage(
-                        files.length === 1
-                          ? "File uploaded."
-                          : "Files uploaded.",
-                      );
-                    } catch (error) {
-                      setError(
-                        error instanceof Error
-                          ? error.message
-                          : "Upload failed.",
-                      );
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                />
-              </label>
-              {!capabilities.uploads && (
+                      setError("");
+                      setBusy(true);
+                      try {
+                        for (const file of files) {
+                          const data = new FormData();
+                          data.set("file", file);
+                          const result = await api<{ entry: Entry }>(
+                            `/api/entries/${entry.id}/attachments`,
+                            { method: "POST", body: data },
+                          );
+                          onUpdated(result.entry);
+                        }
+                        onMessage(
+                          files.length === 1
+                            ? "File uploaded."
+                            : "Files uploaded.",
+                        );
+                      } catch (error) {
+                        setError(
+                          error instanceof Error
+                            ? error.message
+                            : "Upload failed.",
+                        );
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  />
+                </label>
+              )}
+              {canWrite && !capabilities.uploads && (
                 <p className="field-hint">
                   File uploads are temporarily unavailable. Please try again
                   later.
@@ -376,7 +410,7 @@ export function EntryDetail({
           <label className="ack-label">
             <input
               type="checkbox"
-              checked={entry.acknowledgments.includes(email)}
+              checked={acknowledged}
               disabled={busy}
               onChange={(event) => acknowledge(event.target.checked)}
             />
@@ -411,7 +445,45 @@ export function EntryDetail({
         )}
       </Panel>
       <Panel
-        open={!!deleteTarget}
+        open={ackPrompt}
+        onClose={() => {
+          if (!busy) setAckPrompt(false);
+        }}
+        title="Acknowledge this entry?"
+        eyebrow="ACKNOWLEDGMENT REMINDER"
+        modal
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setAckPrompt(false)}
+            >
+              Return to entry
+            </Button>
+            <Button
+              disabled={busy}
+              onClick={async () => {
+                if (await acknowledge(true)) onClose();
+              }}
+            >
+              {busy ? "Saving…" : "Acknowledge and close"}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          You have not acknowledged this entry as {email}. Please confirm that
+          you have reviewed it before closing.
+        </p>
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+      </Panel>
+      <Panel
+        open={canWrite && !!deleteTarget}
         onClose={() => {
           if (!deleting) {
             setDeleteTarget(null);
@@ -489,7 +561,7 @@ export function EntryDetail({
         )}
       </Panel>
       <Panel
-        open={preview}
+        open={canWrite && preview}
         onClose={() => {
           if (!sending) setPreview(false);
         }}

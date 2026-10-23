@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   useForm,
   useFieldArray,
@@ -23,6 +23,7 @@ import {
   type EntryInput,
 } from "@/lib/validation";
 import { api } from "@/lib/api";
+import { personEmailSchema, type InviteRecipient } from "@/lib/people";
 import type { AddressResult } from "@/lib/addresses";
 import { calendarToday } from "@/lib/dates";
 import { AddressField } from "./address-field";
@@ -51,7 +52,12 @@ export function EntryForm({
   const [savedEntry, setSavedEntry] = useState<Entry | undefined>(entry);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState("");
-  const [emailText, setEmailText] = useState(entry?.emails.join(", ") || "");
+  const [recipients, setRecipients] = useState<InviteRecipient[]>([]);
+  const [recipientsLoading, setRecipientsLoading] = useState(true);
+  const [recipientsUnavailable, setRecipientsUnavailable] = useState(false);
+  const [recipientChoice, setRecipientChoice] = useState("");
+  const [manualEmail, setManualEmail] = useState("");
+  const [recipientError, setRecipientError] = useState("");
   const today = calendarToday();
   const initialDay = day < today ? today : day;
   const form = useForm<EntryInput>({
@@ -76,6 +82,52 @@ export function EntryForm({
     name: "requirements",
   });
   const { register } = form;
+  const invitationEmails = form.watch("emails") ?? [];
+  useEffect(() => {
+    const controller = new AbortController();
+    api<{ recipients: InviteRecipient[] }>("/api/invite-recipients", {
+      signal: controller.signal,
+    })
+      .then(({ recipients }) => setRecipients(recipients))
+      .catch(() => {
+        if (!controller.signal.aborted) setRecipientsUnavailable(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setRecipientsLoading(false);
+      });
+    return () => controller.abort();
+  }, []);
+  function addRecipient(rawEmail: string) {
+    const parsed = personEmailSchema.safeParse(rawEmail);
+    if (!parsed.success) {
+      setRecipientError("Enter a valid email address.");
+      return false;
+    }
+    const email = parsed.data;
+    const current = form.getValues("emails");
+    if (current.some((existing) => existing.toLowerCase() === email)) {
+      setRecipientError("That email is already on the invitation list.");
+      return false;
+    }
+    if (current.length >= 25) {
+      setRecipientError("You can invite up to 25 email addresses.");
+      return false;
+    }
+    form.setValue("emails", [...current, email], {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+    setRecipientError("");
+    return true;
+  }
+  function addManualRecipient() {
+    if (addRecipient(manualEmail)) {
+      setManualEmail("");
+      setRecipientChoice("");
+      return true;
+    }
+    return false;
+  }
   function selectLocation(result: AddressResult) {
     for (const name of ["venueName", "address", "city"] as const) {
       if (result[name])
@@ -208,6 +260,15 @@ export function EntryForm({
       setError(messages(errors)[0] || "Please check the required fields.");
     },
   );
+  function submitWithManualRecipient(event: FormEvent<HTMLFormElement>) {
+    if (recipientChoice === "manual" && manualEmail.trim()) {
+      if (!addManualRecipient()) {
+        event.preventDefault();
+        return;
+      }
+    }
+    return submit(event);
+  }
   return (
     <Panel
       open
@@ -251,7 +312,9 @@ export function EntryForm({
               const next = key as Category;
               setCategory(next);
               form.reset(emptyEntry(next, initialDay));
-              setEmailText("");
+              setRecipientChoice("");
+              setManualEmail("");
+              setRecipientError("");
               setPendingFiles([]);
               setError("");
             }}
@@ -261,7 +324,7 @@ export function EntryForm({
           </button>
         ))}
       </div>
-      <form id="entry-form" onSubmit={submit} noValidate>
+      <form id="entry-form" onSubmit={submitWithManualRecipient} noValidate>
         <fieldset className="entry-fields" disabled={busy}>
           <section className="form-section">
             <h3>{category === "tender" ? "Tender details" : "When and who"}</h3>
@@ -597,32 +660,107 @@ export function EntryForm({
           )}
           <section className="form-section">
             <h3>Invite by email</h3>
-            <label className="field">
-              <span>Email addresses</span>
-              <textarea
-                rows={2}
-                value={emailText}
-                onChange={(event) => {
-                  setEmailText(event.target.value);
-                  form.setValue(
-                    "emails",
-                    [
-                      ...new Set(
-                        event.target.value
-                          .split(/[,;\n]/)
-                          .map((e) => e.trim().toLowerCase())
-                          .filter(Boolean),
-                      ),
-                    ],
-                    { shouldDirty: true },
-                  );
-                }}
-              />
-              <small>
-                Separate addresses with commas. Send invitations after saving.
-                No RSVP is requested.
+            <div className="invite-recipient-picker">
+              {invitationEmails.length > 0 && (
+                <div
+                  className="invite-recipient-list"
+                  aria-label="Invitation recipients"
+                >
+                  {invitationEmails.map((email) => (
+                    <span className="invite-recipient" key={email}>
+                      {email}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${email} from invitations`}
+                        onClick={() => {
+                          form.setValue(
+                            "emails",
+                            invitationEmails.filter((item) => item !== email),
+                            { shouldDirty: true, shouldValidate: true },
+                          );
+                          setRecipientError("");
+                        }}
+                      >
+                        <Trash2 size={13} aria-hidden="true" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <label className="field">
+                <span>Add an invitation recipient</span>
+                <select
+                  value={recipientChoice}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "manual") {
+                      setRecipientChoice(value);
+                      setRecipientError("");
+                    } else {
+                      addRecipient(value);
+                      setRecipientChoice("");
+                    }
+                  }}
+                >
+                  <option value="" disabled>
+                    {recipientsLoading
+                      ? "Loading approved emails…"
+                      : "Select an approved email or add one manually"}
+                  </option>
+                  {recipients.map(({ email, name }) => (
+                    <option
+                      key={email}
+                      value={email}
+                      disabled={invitationEmails.includes(email)}
+                    >
+                      {name ? `${name} — ${email}` : email}
+                    </option>
+                  ))}
+                  <option value="manual">Add an email manually…</option>
+                </select>
+              </label>
+              {recipientChoice === "manual" && (
+                <div className="invite-recipient-manual">
+                  <label className="field">
+                    <span>Email address</span>
+                    <input
+                      type="email"
+                      value={manualEmail}
+                      maxLength={254}
+                      autoFocus
+                      onChange={(event) => {
+                        setManualEmail(event.target.value);
+                        setRecipientError("");
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addManualRecipient();
+                        }
+                      }}
+                    />
+                  </label>
+                  <Button variant="secondary" onClick={addManualRecipient}>
+                    Add email
+                  </Button>
+                </div>
+              )}
+              {recipientsUnavailable && (
+                <small className="field-hint">
+                  Approved emails could not load. You can still add an email
+                  manually.
+                </small>
+              )}
+              {recipientError && (
+                <p role="alert" className="form-error">
+                  {recipientError}
+                </p>
+              )}
+              <small className="field-hint">
+                Add up to 25 people. Send invitations after saving. No RSVP is
+                requested.
               </small>
-            </label>
+            </div>
           </section>
           {error && (
             <p role="alert" className="form-error">

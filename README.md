@@ -15,13 +15,13 @@ A shared planning workspace for Tony and Canadian distributors. Built with Next.
 - New or changed visit/event dates and tender deadlines must be today or later, using America/Edmonton for the shared calendar day. Existing past dates may stay unchanged when correcting an older entry's other details. The form and server enforce this rule.
 - Delete entries from their details after confirming in a dialog. Cancel keeps the entry. Deletion removes both tender dates and related records; certificate files are cleaned up after the database deletion.
 - Background refresh every minute while visible and refresh when returning to the tab.
-- Tony-only **People** section to add approved emails and disable or restore calendar access.
+- Tony-only **People** section to add approved emails, choose read-only or read-and-write access, change existing permissions, and disable or restore calendar access.
 
 ## Access model
 
 Visitors enter an address stored as active in Neon's `authorized_emails` table. The server checks the database and issues a signed, HttpOnly, seven-day session cookie. Every protected request rechecks database access; disabling a person blocks their existing session on its next request. Writes check the request origin.
 
-**This is an email allowlist gate, not verified identity.** There is no password or ownership verification: anyone who knows an approved address can enter it. Acknowledgments are self-reported. All admitted people can view the full calendar and edit entries. Only the database-designated Tony can see People or call its APIs. The form cannot assign Tony's permission, and Tony cannot disable his own access. There are no customer accounts or change-history interface.
+**This is an email allowlist gate, not verified identity.** There is no password or ownership verification: anyone who knows an approved address can enter it. Acknowledgments are self-reported. Active people with read-only access can view the full calendar, download attachments, and acknowledge entries. People with write access can also create, edit, and delete entries, upload attachments, and send invitations. Only the database-designated Tony can see People or call its APIs. Tony can change permissions for existing people but cannot change his own write access or disable himself. There are no customer accounts or change-history interface.
 
 ## Requirements
 
@@ -138,4 +138,4 @@ A public source repository does not make Neon public. Keep credentials in enviro
 
 ## Current scope
 
-Pricing/promotions, verified account authentication, a general role system, edit history, RSVP, instant push synchronization, recurring events, and scheduled reminders are outside this first version. Users can create, edit, and delete entries; individual attachment removal is not exposed yet. Tony's people-management permission is stored in the database.
+Pricing/promotions, verified account authentication, a general role system, edit history, RSVP, instant push synchronization, recurring events, and scheduled reminders are outside this first version. People with write access can create, edit, and delete entries; individual attachment removal is not exposed yet. Tony's people-management permission and each person's calendar permission are stored in the database.
