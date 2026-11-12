@@ -1557,6 +1557,23 @@ button:disabled:hover {
   justify-content: space-between;
   padding: 14px 17px;
 }
+.access-partner {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #e6ebdf;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  color: #7d8e7b;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.access-partner-logo {
+  width: 150px;
+  height: auto;
+}
 .service-note {
   background: #f7f8ef;
   border: 1px solid #e6e8d8;

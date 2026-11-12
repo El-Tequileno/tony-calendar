@@ -92,6 +92,16 @@ export function AccessForm({ entryId }: { entryId?: string }) {
             {busy ? "Opening workspace…" : "Open calendar"}
             <ArrowRight size={16} />
           </Button>
+          <div className="access-partner">
+            <span>In partnership with</span>
+            <Image
+              src="/brand/breakthru-canada.png"
+              alt="Breakthru Beverage Canada"
+              width={1950}
+              height={900}
+              className="access-partner-logo"
+            />
+          </div>
         </form>
       </div>
     </main>
