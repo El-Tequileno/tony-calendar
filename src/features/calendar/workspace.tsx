@@ -319,8 +319,7 @@ export function Workspace({
                     onClick={() =>
                       setForm({
                         type: category === "all" ? "market" : category,
-                        day:
-                          anchor < calendarToday() ? calendarToday() : anchor,
+                        day: anchor,
                       })
                     }
                   >
@@ -514,12 +513,6 @@ export function Workspace({
                     onAdd={
                       canWrite
                         ? (day) => {
-                            if (day < calendarToday()) {
-                              setMessage(
-                                "Entries can only be added for today or a future date.",
-                              );
-                              return;
-                            }
                             setForm({
                               type: category === "all" ? "market" : category,
                               day,
@@ -534,7 +527,7 @@ export function Workspace({
                     {view === "week"
                       ? "Dates and times follow each entry’s selected time zone."
                       : canWrite
-                        ? "Select today or a future date to add an entry."
+                        ? "Select a date to add an entry."
                         : "Select an entry to view its details."}
                   </span>
                   <button onClick={() => reload(true)} disabled={loading}>

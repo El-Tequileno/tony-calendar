@@ -17,7 +17,7 @@ import {
   type Category,
 } from "@/lib/constants";
 import {
-  entryWriteSchema,
+  entrySchema,
   emptyEntry,
   type Entry,
   type EntryInput,
@@ -25,7 +25,6 @@ import {
 import { api } from "@/lib/api";
 import { personEmailSchema, type InviteRecipient } from "@/lib/people";
 import type { AddressResult } from "@/lib/addresses";
-import { calendarToday } from "@/lib/dates";
 import { AddressField } from "./address-field";
 import { DocumentPicker } from "./document-picker";
 
@@ -58,10 +57,8 @@ export function EntryForm({
   const [recipientChoice, setRecipientChoice] = useState("");
   const [manualEmail, setManualEmail] = useState("");
   const [recipientError, setRecipientError] = useState("");
-  const today = calendarToday();
-  const initialDay = day < today ? today : day;
   const form = useForm<EntryInput>({
-    resolver: zodResolver(entryWriteSchema(savedEntry)) as Resolver<EntryInput>,
+    resolver: zodResolver(entrySchema) as Resolver<EntryInput>,
     defaultValues: entry
       ? {
           ...entry,
@@ -70,7 +67,7 @@ export function EntryForm({
               ? [{ name: "", phone: "" }]
               : entry.activationTeam,
         }
-      : emptyEntry(type, initialDay),
+      : emptyEntry(type, day),
   });
   const customers = useFieldArray({ control: form.control, name: "customers" });
   const activationTeam = useFieldArray({
@@ -153,7 +150,7 @@ export function EntryForm({
         : name === "callBackDeadline"
           ? preSubmissionDeadline
           : "";
-    return earlierDate > today ? earlierDate : today;
+    return earlierDate || undefined;
   }
   function field(
     name: Path<EntryInput>,
@@ -311,7 +308,7 @@ export function EntryForm({
             onClick={() => {
               const next = key as Category;
               setCategory(next);
-              form.reset(emptyEntry(next, initialDay));
+              form.reset(emptyEntry(next, day));
               setRecipientChoice("");
               setManualEmail("");
               setRecipientError("");

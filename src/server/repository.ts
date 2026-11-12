@@ -3,7 +3,7 @@ import { and, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../db/client";
 import * as tables from "../db/schema";
 import {
-  entryWriteSchema,
+  entrySchema,
   eventContactFields,
   type Attachment,
   type Entry,
@@ -69,7 +69,7 @@ export async function saveEntry(
   id?: string,
   revision?: number,
 ): Promise<Entry> {
-  if (!id) data = entryWriteSchema().parse(data);
+  data = entrySchema.parse(data);
   const entryId = id || randomUUID();
   const { customers, requirements, ...payload } = data;
   await db().transaction(async (tx) => {
@@ -85,7 +85,6 @@ export async function saveEntry(
           "This entry changed or was removed. Reload it before saving again.",
           409,
         );
-      entryWriteSchema({ ...previous.data, type: previous.type }).parse(data);
       const updated = await tx
         .update(tables.entries)
         .set({

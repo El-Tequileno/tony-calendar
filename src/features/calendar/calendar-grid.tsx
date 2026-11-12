@@ -57,9 +57,7 @@ export function CalendarGrid({
         eventDisplay="block"
         displayEventTime={false}
         tableClass="calendar-table"
-        dayCellClass={(info) =>
-          `calendar-day ${info.isPast ? "past-calendar-day" : ""} ${onAdd ? "" : "read-only-calendar-day"}`
-        }
+        dayCellClass={`calendar-day ${onAdd ? "" : "read-only-calendar-day"}`}
         dayHeaderClass="calendar-day-header"
         eventClass={(info) =>
           `calendar-chip ${info.event.extendedProps.deadline === "callback" ? "callback" : info.event.extendedProps.entry.type}`
