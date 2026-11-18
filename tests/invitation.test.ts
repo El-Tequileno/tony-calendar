@@ -3,6 +3,44 @@ import { invitationHtml, invitationText } from "../src/lib/invitation";
 import { entryFixtures } from "./fixtures";
 
 describe("invitation email formatting", () => {
+  it("includes Casa Salles travel details and multiple participants in both formats", () => {
+    const entry = {
+      ...entryFixtures()[1],
+      provinces: ["AB", "BC"],
+      airportPickup: "GDL" as const,
+      checkInTime: "15:00",
+      checkOutTime: "11:00",
+      flightNumber: "AC123",
+      flightArrivalTime: "13:30",
+      flightDepartureTime: "17:00",
+      participants: [
+        { name: "Alex", comments: "Vegetarian" },
+        { name: "Sam", comments: "Window seat" },
+      ],
+      additionalComments: "Extra notes",
+    };
+    for (const email of [
+      invitationText(entry, "https://calendar.example"),
+      invitationHtml(entry, "https://calendar.example"),
+    ]) {
+      for (const value of [
+        "Alberta",
+        "British Columbia",
+        "GDL",
+        "15:00",
+        "11:00",
+        "AC123",
+        "13:30",
+        "17:00",
+        "Alex",
+        "Vegetarian",
+        "Sam",
+        "Window seat",
+        "Extra notes",
+      ])
+        expect(email).toContain(value);
+    }
+  });
   it("shows the public El Tequileño logo above the invitation content", () => {
     const html = invitationHtml(entryFixtures()[0], "https://calendar.example");
     const logo =

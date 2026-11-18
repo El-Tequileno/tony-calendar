@@ -242,7 +242,43 @@ export function EntryDetail({
           <Group title="Visitors & agenda">
             <dl>
               <Item label="Customer name" value={entry.customer} />
-              <Item label="People going" value={entry.visitors} />
+              {entry.city && (
+                <Item label="Previous destination city" value={entry.city} />
+              )}
+              <Item
+                label="Airport pick up location"
+                value={entry.airportPickup}
+              />
+              <Item label="Check-in time" value={entry.checkInTime} />
+              <Item label="Check-out time" value={entry.checkOutTime} />
+              <Item label="Flight number" value={entry.flightNumber} />
+              <Item
+                label="Flight arrival time"
+                value={entry.flightArrivalTime}
+              />
+              <Item
+                label="Flight departure time"
+                value={entry.flightDepartureTime}
+              />
+              {entry.visitors && (
+                <Item
+                  label="Previously entered people going"
+                  value={entry.visitors}
+                />
+              )}
+              {entry.participants.map((person, index) => (
+                <Item
+                  key={index}
+                  label={`Participant ${index + 1}`}
+                  value={[person.name, person.comments]
+                    .filter(Boolean)
+                    .join(" — ")}
+                />
+              ))}
+              <Item
+                label="Additional comments"
+                value={entry.additionalComments}
+              />
             </dl>
             {entry.agenda ? (
               <a

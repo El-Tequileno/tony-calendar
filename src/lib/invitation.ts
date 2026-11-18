@@ -53,7 +53,10 @@ function details(entry: Entry): Detail[] {
           ["End time", entry.endTime],
           ["Time zone", entry.startTime || entry.endTime ? entry.timeZone : ""],
           ["Province(s)", entry.provinces.map((p) => PROVINCES[p]).join(", ")],
-          ["City", entry.city],
+          [
+            entry.type === "distillery" ? "Previous destination city" : "City",
+            entry.city,
+          ],
           ...(entry.type === "event" ? [] : [["Location", entry.location]]),
           ["Distributor", entry.distributor],
         ]),
@@ -61,6 +64,21 @@ function details(entry: Entry): Detail[] {
       ? [
           ["Customer", entry.customer],
           ["People visiting", entry.visitors],
+          ["Airport pick up location", entry.airportPickup],
+          ["Check-in time", entry.checkInTime],
+          ["Check-out time", entry.checkOutTime],
+          ["Flight number", entry.flightNumber],
+          ["Flight arrival time", entry.flightArrivalTime],
+          ["Flight departure time", entry.flightDepartureTime],
+          [
+            "Participants",
+            entry.participants
+              .map((person) =>
+                [person.name, person.comments].filter(Boolean).join(" — "),
+              )
+              .join("\n"),
+          ],
+          ["Additional comments", entry.additionalComments],
         ]
       : []),
     ...(entry.type === "event"

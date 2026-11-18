@@ -64,6 +64,7 @@ describe("entry validation", () => {
     expect(
       entrySchema.safeParse({
         ...emptyEntry("distillery", "2026-10-20"),
+        provinces: ["AB"],
         title: "Visit",
       }).success,
     ).toBe(true);

@@ -28,6 +28,14 @@ export async function listEntries(): Promise<Entry[]> {
   ]);
   return rows.map((row) => ({
     ...row.data,
+    participants: row.data.participants ?? [],
+    airportPickup: row.data.airportPickup ?? "",
+    checkInTime: row.data.checkInTime ?? "",
+    checkOutTime: row.data.checkOutTime ?? "",
+    flightNumber: row.data.flightNumber ?? "",
+    flightArrivalTime: row.data.flightArrivalTime ?? "",
+    flightDepartureTime: row.data.flightDepartureTime ?? "",
+    additionalComments: row.data.additionalComments ?? "",
     venueName: row.data.venueName || "",
     address:
       row.data.address ?? (row.type === "event" ? row.data.location || "" : ""),

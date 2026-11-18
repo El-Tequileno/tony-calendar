@@ -5,6 +5,7 @@ export function entryFixtures(): Entry[] {
   return (["market", "distillery", "event", "tender"] as const).map(
     (type, index) => ({
       ...emptyEntry(type, "2026-10-20"),
+      provinces: ["AB"],
       id: `00000000-0000-4000-8000-00000000000${index + 1}`,
       title: `Test ${type}`,
       revision: 1,

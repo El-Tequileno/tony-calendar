@@ -1066,6 +1066,9 @@ button:disabled:hover {
   resize: vertical;
   min-height: 70px;
 }
+.field.additional-comments textarea {
+  width: 75%;
+}
 .field select[multiple] {
   min-height: 125px;
 }

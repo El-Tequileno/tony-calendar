@@ -53,6 +53,17 @@ export const entrySchema = z
     stops: text,
     customer: text,
     visitors: text,
+    participants: z
+      .array(z.object({ name: text, comments: text }))
+      .max(50)
+      .default([]),
+    airportPickup: z.enum(["", "GDL", "PV"]).default(""),
+    checkInTime: time,
+    checkOutTime: time,
+    flightNumber: text,
+    flightArrivalTime: time,
+    flightDepartureTime: time,
+    additionalComments: text,
     agenda: z
       .string()
       .trim()
@@ -151,6 +162,14 @@ export const entrySchema = z
       if (!entry.provinces.length)
         error("provinces", "Select at least one province");
       if (
+        entry.type === "distillery" &&
+        entry.participants.some((p) => p.comments && !p.name)
+      )
+        error(
+          "participants",
+          "Enter a name for each participant with comments",
+        );
+      if (
         entry.type === "market" &&
         (!entry.customers.length || entry.customers.some((c) => !c.name))
       )
@@ -166,13 +185,11 @@ export const entrySchema = z
     }
   });
 export type EntryInput = z.infer<typeof entrySchema>;
-export function eventContactFields(
-  data: {
-    ownerName?: string;
-    activationTeam?: EntryInput["activationTeam"];
-    peopleNames?: string;
-  },
-) {
+export function eventContactFields(data: {
+  ownerName?: string;
+  activationTeam?: EntryInput["activationTeam"];
+  peopleNames?: string;
+}) {
   return {
     ownerName: data.ownerName || "",
     activationTeam:
@@ -206,7 +223,7 @@ export function emptyEntry(type: EntryInput["type"], day: string): EntryInput {
     startTime: "",
     endTime: "",
     timeZone: "America/Edmonton",
-    provinces: ["AB"],
+    provinces: type === "distillery" ? [] : ["AB"],
     city: "",
     distributor: "",
     status: "Draft",
@@ -215,6 +232,14 @@ export function emptyEntry(type: EntryInput["type"], day: string): EntryInput {
     stops: "",
     customer: "",
     visitors: "",
+    participants: type === "distillery" ? [{ name: "", comments: "" }] : [],
+    airportPickup: "",
+    checkInTime: "",
+    checkOutTime: "",
+    flightNumber: "",
+    flightArrivalTime: "",
+    flightDepartureTime: "",
+    additionalComments: "",
     agenda: "",
     location: "",
     venueName: "",

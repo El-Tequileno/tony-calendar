@@ -62,6 +62,10 @@ export function EntryForm({
     defaultValues: entry
       ? {
           ...entry,
+          participants:
+            entry.type === "distillery" && !entry.participants.length
+              ? [{ name: "", comments: "" }]
+              : entry.participants,
           activationTeam:
             entry.type === "event" && !entry.activationTeam.length
               ? [{ name: "", phone: "" }]
@@ -70,6 +74,10 @@ export function EntryForm({
       : emptyEntry(type, day),
   });
   const customers = useFieldArray({ control: form.control, name: "customers" });
+  const participants = useFieldArray({
+    control: form.control,
+    name: "participants",
+  });
   const activationTeam = useFieldArray({
     control: form.control,
     name: "activationTeam",
@@ -159,7 +167,10 @@ export function EntryForm({
     options?: { full?: boolean; required?: boolean; hint?: string },
   ) {
     return (
-      <label className={`field ${options?.full ? "full" : ""}`} key={name}>
+      <label
+        className={`field ${options?.full ? "full" : ""} ${name === "additionalComments" ? "additional-comments" : ""}`}
+        key={name}
+      >
         <span>
           {label}
           {options?.required ? " *" : ""}
@@ -199,6 +210,9 @@ export function EntryForm({
   const submit = form.handleSubmit(
     async (data) => {
       if (data.type === "event") data.location = "";
+      data.participants = data.participants.filter(
+        (person) => person.name || person.comments,
+      );
       data.activationTeam = data.activationTeam.filter(
         (member) => member.name || member.phone,
       );
@@ -361,6 +375,12 @@ export function EntryForm({
                 <>
                   {field("startDate", "Start date", "date", { required: true })}
                   {field("endDate", "End date", "date", { required: true })}
+                  {category === "distillery" && (
+                    <>
+                      {field("checkInTime", "Check-in time", "time")}
+                      {field("checkOutTime", "Check-out time", "time")}
+                    </>
+                  )}
                   {category !== "distillery" && (
                     <>
                       {field("startTime", "Start time", "time")}
@@ -394,21 +414,63 @@ export function EntryForm({
               <h3>{CATEGORIES[category].singular} details</h3>
               <div className="form-grid">
                 {category === "distillery" ? (
-                  <label className="field full">
-                    <span>Canadian province(s) of visiting parties *</span>
-                    <select multiple {...register("provinces")} size={5}>
+                  <div className="field full">
+                    <label htmlFor="visit-province">
+                      Canadian province(s) of visiting partners *
+                    </label>
+                    <select
+                      id="visit-province"
+                      value=""
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        if (
+                          value &&
+                          !form.getValues("provinces").includes(value)
+                        )
+                          form.setValue(
+                            "provinces",
+                            [...form.getValues("provinces"), value],
+                            { shouldDirty: true, shouldValidate: true },
+                          );
+                      }}
+                    >
+                      <option value="">Select a province or territory</option>
                       {Object.entries(PROVINCES).map(([id, label]) => (
-                        <option value={id} key={id}>
+                        <option
+                          value={id}
+                          key={id}
+                          disabled={form.watch("provinces").includes(id)}
+                        >
                           {label}
                         </option>
                       ))}
                     </select>
-                    <small>
-                      Choose the Canadian home provinces of the customers or
-                      distributors travelling. Hold Ctrl or Command to select
-                      more than one.
-                    </small>
-                  </label>
+                    <div
+                      className="invite-recipient-list"
+                      aria-label="Selected provinces"
+                    >
+                      {form.watch("provinces").map((province) => (
+                        <span className="invite-recipient" key={province}>
+                          {PROVINCES[province]}
+                          <button
+                            type="button"
+                            aria-label={`Remove ${PROVINCES[province]}`}
+                            onClick={() =>
+                              form.setValue(
+                                "provinces",
+                                form
+                                  .getValues("provinces")
+                                  .filter((item) => item !== province),
+                                { shouldDirty: true, shouldValidate: true },
+                              )
+                            }
+                          >
+                            <Trash2 size={13} aria-hidden="true" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ) : (
                   <label className="field">
                     <span>Province *</span>
@@ -428,20 +490,10 @@ export function EntryForm({
                     </select>
                   </label>
                 )}
-                {field(
-                  "city",
-                  category === "distillery" ? "Destination city" : "City",
-                )}
+                {category !== "distillery" && field("city", "City")}
                 {category === "distillery" && (
                   <>
                     {field("customer", "Customer name", "text", { full: true })}
-                    {field("visitors", "People going", "textarea", {
-                      full: true,
-                    })}
-                    {field("agenda", "Agenda link", "url", {
-                      full: true,
-                      hint: "Link to the separate agenda with itinerary and travel details.",
-                    })}
                   </>
                 )}
                 {category === "event" && (
@@ -480,6 +532,54 @@ export function EntryForm({
                   </>
                 )}
               </div>
+              {category === "distillery" && (
+                <>
+                  {entry?.visitors && (
+                    <p className="field-hint">
+                      Previously entered people going: {entry.visitors}
+                    </p>
+                  )}
+                  {entry?.city && (
+                    <p className="field-hint">
+                      Previously entered destination city: {entry.city}
+                    </p>
+                  )}
+                  <div className="customers-editor">
+                    {participants.fields.map((participant, index) => (
+                      <fieldset className="customer-card" key={participant.id}>
+                        <legend>Participant {index + 1}</legend>
+                        <div className="form-grid">
+                          {field(`participants.${index}.name`, "Name")}
+                          {field(
+                            `participants.${index}.comments`,
+                            "Comments",
+                            "textarea",
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          className="remove-button"
+                          aria-label={`Remove participant ${index + 1}`}
+                          onClick={() => participants.remove(index)}
+                        >
+                          <Trash2 size={13} />
+                          Remove participant
+                        </Button>
+                      </fieldset>
+                    ))}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    disabled={participants.fields.length >= 50}
+                    onClick={() =>
+                      participants.append({ name: "", comments: "" })
+                    }
+                  >
+                    <Plus size={14} />
+                    Add participant
+                  </Button>
+                </>
+              )}
               {category === "event" && (
                 <>
                   <div className="customers-editor">
@@ -654,6 +754,41 @@ export function EntryForm({
                 setError("");
               }}
             />
+          )}
+          {category === "distillery" && (
+            <>
+              <section className="form-section">
+                <h3>Flight details</h3>
+                <div className="form-grid">
+                  {select("airportPickup", "Airport pick up location", {
+                    "": "Select an airport",
+                    GDL: "GDL",
+                    PV: "PV",
+                  })}
+                  {field("flightNumber", "Flight number")}
+                  {field("flightArrivalTime", "Flight arrival time", "time")}
+                  {field(
+                    "flightDepartureTime",
+                    "Flight departure time",
+                    "time",
+                  )}
+                </div>
+              </section>
+              <section className="form-section">
+                <div className="form-grid">
+                  {field("agenda", "Agenda link", "url", {
+                    full: true,
+                    hint: "Link to the separate agenda with itinerary and travel details.",
+                  })}
+                  {field(
+                    "additionalComments",
+                    "Additional comments",
+                    "textarea",
+                    { full: true },
+                  )}
+                </div>
+              </section>
+            </>
           )}
           <section className="form-section">
             <h3>Invite by email</h3>
