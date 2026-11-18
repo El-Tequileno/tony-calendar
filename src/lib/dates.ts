@@ -1,5 +1,23 @@
 import type { Entry } from "./validation";
 import { CALENDAR_TIME_ZONE } from "./constants";
+export function saturdayTimes(schedule: Entry["saturdaySchedules"][number]) {
+  const slot = (start: string, end: string) =>
+    start && end
+      ? `${start}–${end}`
+      : start
+        ? `From ${start}`
+        : end
+          ? `Until ${end}`
+          : "";
+  return (
+    [
+      slot(schedule.firstStart, schedule.firstEnd),
+      slot(schedule.secondStart, schedule.secondEnd),
+    ]
+      .filter(Boolean)
+      .join(", ") || "Times not entered"
+  );
+}
 export function calendarToday(now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: CALENDAR_TIME_ZONE,

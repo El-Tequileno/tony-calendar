@@ -1,7 +1,7 @@
 import type { Entry } from "./validation";
 import { APP_NAME, BRAND_LOGO } from "./brand";
 import { CATEGORIES, PROVINCES } from "./constants";
-import { formatDay } from "./dates";
+import { formatDay, saturdayTimes } from "./dates";
 
 type Detail = [label: string, value: string];
 function escape(value: string) {
@@ -102,7 +102,7 @@ function details(entry: Entry): Detail[] {
       ? [
           ...entry.saturdaySchedules.map((schedule) => [
             `Saturday ${formatDay(schedule.date)} (replaces regular times)`,
-            `${schedule.firstStart}–${schedule.firstEnd}, ${schedule.secondStart}–${schedule.secondEnd}`,
+            saturdayTimes(schedule),
           ]),
           ["Venue name", entry.venueName],
           ["Address", entry.address || entry.location],

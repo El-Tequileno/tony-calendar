@@ -429,25 +429,21 @@ export function EntryForm({
                                     `saturdaySchedules.${index}.firstStart`,
                                     "First slot start",
                                     "time",
-                                    { required: true },
                                   )}
                                   {field(
                                     `saturdaySchedules.${index}.firstEnd`,
                                     "First slot end",
                                     "time",
-                                    { required: true },
                                   )}
                                   {field(
                                     `saturdaySchedules.${index}.secondStart`,
                                     "Second slot start",
                                     "time",
-                                    { required: true },
                                   )}
                                   {field(
                                     `saturdaySchedules.${index}.secondEnd`,
                                     "Second slot end",
                                     "time",
-                                    { required: true },
                                   )}
                                 </div>
                                 <Button

@@ -4,7 +4,7 @@ import { entrySchema } from "../src/lib/validation";
 import { entryFixtures } from "./fixtures";
 
 describe("past-day scheduling", () => {
-  it("validates two distinct Saturday slots within the event dates", () => {
+  it("allows optional times and Saturdays outside event dates while validating provided slots", () => {
     const entry = {
       ...entryFixtures()[2],
       startDate: "2026-10-16",
@@ -32,7 +32,7 @@ describe("past-day scheduling", () => {
         ...entry,
         saturdaySchedules: [{ ...schedule, date: "2026-10-24" }],
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       entrySchema.safeParse({
         ...entry,
@@ -44,7 +44,7 @@ describe("past-day scheduling", () => {
         ...entry,
         saturdaySchedules: [{ ...schedule, secondEnd: "" }],
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       entrySchema.safeParse({
         ...entry,

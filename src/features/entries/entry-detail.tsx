@@ -11,7 +11,7 @@ import {
 import { Panel } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, PROVINCES } from "@/lib/constants";
-import { formatDay, when } from "@/lib/dates";
+import { formatDay, when, saturdayTimes } from "@/lib/dates";
 import type { Entry } from "@/lib/validation";
 import { api, RequestError } from "@/lib/api";
 import { invitationBodyHtml, invitationSubject } from "@/lib/invitation";
@@ -223,7 +223,7 @@ export function EntryDetail({
                 <Item
                   key={schedule.date}
                   label={formatDay(schedule.date)}
-                  value={`${schedule.firstStart}–${schedule.firstEnd}, ${schedule.secondStart}–${schedule.secondEnd}`}
+                  value={saturdayTimes(schedule)}
                 />
               ))}
             </dl>

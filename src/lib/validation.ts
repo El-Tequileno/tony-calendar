@@ -178,32 +178,26 @@ export const entrySchema = z
         for (const schedule of entry.saturdaySchedules) {
           if (
             !schedule.date ||
-            schedule.date < entry.startDate ||
-            schedule.date > entry.endDate ||
             !/^\d{4}-\d{2}-\d{2}$/.test(schedule.date) ||
             new Date(`${schedule.date}T12:00:00Z`).getUTCDay() !== 6
           )
             error(
               "saturdaySchedules",
-              "Choose a Saturday within the event dates for each Saturday schedule",
+              "Choose a Saturday for each Saturday schedule",
             );
           if (seen.has(schedule.date))
             error("saturdaySchedules", "Add only one schedule per Saturday");
           seen.add(schedule.date);
           if (
-            !schedule.firstStart ||
-            !schedule.firstEnd ||
-            !schedule.secondStart ||
-            !schedule.secondEnd
-          )
-            error(
-              "saturdaySchedules",
-              "Enter start and end times for both Saturday time slots",
-            );
-          else if (
-            schedule.firstEnd <= schedule.firstStart ||
-            schedule.secondEnd <= schedule.secondStart ||
-            schedule.secondStart < schedule.firstEnd
+            (schedule.firstStart &&
+              schedule.firstEnd &&
+              schedule.firstEnd <= schedule.firstStart) ||
+            (schedule.secondStart &&
+              schedule.secondEnd &&
+              schedule.secondEnd <= schedule.secondStart) ||
+            (schedule.firstEnd &&
+              schedule.secondStart &&
+              schedule.secondStart < schedule.firstEnd)
           )
             error(
               "saturdaySchedules",
