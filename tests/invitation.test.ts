@@ -3,6 +3,38 @@ import { invitationHtml, invitationText } from "../src/lib/invitation";
 import { entryFixtures } from "./fixtures";
 
 describe("invitation email formatting", () => {
+  it("includes Saturday slots and their timezone in both email formats", () => {
+    const entry = {
+      ...entryFixtures()[2],
+      startDate: "2026-10-16",
+      endDate: "2026-10-17",
+      startTime: "14:00",
+      endTime: "18:00",
+      saturdaySchedules: [
+        {
+          date: "2026-10-17",
+          firstStart: "13:00",
+          firstEnd: "16:00",
+          secondStart: "19:00",
+          secondEnd: "22:00",
+        },
+      ],
+    };
+    for (const email of [
+      invitationText(entry, "https://calendar.example"),
+      invitationHtml(entry, "https://calendar.example"),
+    ]) {
+      for (const value of [
+        "Regular start time",
+        "Saturday October 17, 2026",
+        "replaces regular times",
+        "13:00–16:00",
+        "19:00–22:00",
+        "America/Edmonton",
+      ])
+        expect(email).toContain(value);
+    }
+  });
   it("includes Casa Salles travel details and multiple participants in both formats", () => {
     const entry = {
       ...entryFixtures()[1],

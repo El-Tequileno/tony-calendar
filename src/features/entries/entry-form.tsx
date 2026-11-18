@@ -74,6 +74,10 @@ export function EntryForm({
       : emptyEntry(type, day),
   });
   const customers = useFieldArray({ control: form.control, name: "customers" });
+  const saturdaySchedules = useFieldArray({
+    control: form.control,
+    name: "saturdaySchedules",
+  });
   const participants = useFieldArray({
     control: form.control,
     name: "participants",
@@ -383,8 +387,97 @@ export function EntryForm({
                   )}
                   {category !== "distillery" && (
                     <>
-                      {field("startTime", "Start time", "time")}
-                      {field("endTime", "End time", "time")}
+                      {field(
+                        "startTime",
+                        category === "event" && saturdaySchedules.fields.length
+                          ? "Regular start time"
+                          : "Start time",
+                        "time",
+                      )}
+                      {field(
+                        "endTime",
+                        category === "event" && saturdaySchedules.fields.length
+                          ? "Regular end time"
+                          : "End time",
+                        "time",
+                      )}
+                      {category === "event" && (
+                        <div className="full">
+                          <div className="customers-editor">
+                            {saturdaySchedules.fields.map((schedule, index) => (
+                              <fieldset
+                                className="customer-card"
+                                key={schedule.id}
+                              >
+                                <legend>Saturday schedule {index + 1}</legend>
+                                <p className="field-hint">
+                                  These two time slots replace the regular times
+                                  on this Saturday.
+                                </p>
+                                <div className="form-grid">
+                                  {field(
+                                    `saturdaySchedules.${index}.date`,
+                                    "Saturday date",
+                                    "date",
+                                    { full: true, required: true },
+                                  )}
+                                  {field(
+                                    `saturdaySchedules.${index}.firstStart`,
+                                    "First slot start",
+                                    "time",
+                                    { required: true },
+                                  )}
+                                  {field(
+                                    `saturdaySchedules.${index}.firstEnd`,
+                                    "First slot end",
+                                    "time",
+                                    { required: true },
+                                  )}
+                                  {field(
+                                    `saturdaySchedules.${index}.secondStart`,
+                                    "Second slot start",
+                                    "time",
+                                    { required: true },
+                                  )}
+                                  {field(
+                                    `saturdaySchedules.${index}.secondEnd`,
+                                    "Second slot end",
+                                    "time",
+                                    { required: true },
+                                  )}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  className="remove-button"
+                                  aria-label={`Remove Saturday schedule ${index + 1}`}
+                                  onClick={() =>
+                                    saturdaySchedules.remove(index)
+                                  }
+                                >
+                                  <Trash2 size={13} />
+                                  Remove Saturday schedule
+                                </Button>
+                              </fieldset>
+                            ))}
+                          </div>
+                          <Button
+                            variant="secondary"
+                            disabled={saturdaySchedules.fields.length >= 50}
+                            onClick={() =>
+                              saturdaySchedules.append({
+                                date: "",
+                                firstStart: "",
+                                firstEnd: "",
+                                secondStart: "",
+                                secondEnd: "",
+                              })
+                            }
+                          >
+                            <Plus size={14} />
+                            Add Saturday time slots
+                          </Button>
+                        </div>
+                      )}
                       {select(
                         "timeZone",
                         "Meeting / event time zone",

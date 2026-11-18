@@ -89,5 +89,5 @@ export function inRange(entry: Entry, start: string, endExclusive: string) {
 export function when(entry: Entry) {
   if (entry.type === "tender")
     return `Pre-submission: ${formatDay(entry.preSubmissionDeadline)} · Call back: ${formatDay(entry.callBackDeadline)}`;
-  return `${formatDay(entry.startDate)}${entry.endDate !== entry.startDate ? ` – ${formatDay(entry.endDate)}` : ""}${entry.startTime ? ` · ${entry.startTime}${entry.endTime ? `–${entry.endTime}` : ""} (${entry.timeZone})` : ""}`;
+  return `${formatDay(entry.startDate)}${entry.endDate !== entry.startDate ? ` – ${formatDay(entry.endDate)}` : ""}${entry.startTime ? ` · ${entry.type === "event" && entry.saturdaySchedules.length ? "Regular hours: " : ""}${entry.startTime}${entry.endTime ? `–${entry.endTime}` : ""} (${entry.timeZone})` : ""}`;
 }

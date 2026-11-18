@@ -4,6 +4,54 @@ import { entrySchema } from "../src/lib/validation";
 import { entryFixtures } from "./fixtures";
 
 describe("past-day scheduling", () => {
+  it("validates two distinct Saturday slots within the event dates", () => {
+    const entry = {
+      ...entryFixtures()[2],
+      startDate: "2026-10-16",
+      endDate: "2026-10-17",
+      saturdaySchedules: [
+        {
+          date: "2026-10-17",
+          firstStart: "13:00",
+          firstEnd: "16:00",
+          secondStart: "19:00",
+          secondEnd: "22:00",
+        },
+      ],
+    };
+    expect(entrySchema.safeParse(entry).success).toBe(true);
+    const schedule = entry.saturdaySchedules[0];
+    expect(
+      entrySchema.safeParse({
+        ...entry,
+        saturdaySchedules: [{ ...schedule, date: "2026-10-16" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      entrySchema.safeParse({
+        ...entry,
+        saturdaySchedules: [{ ...schedule, date: "2026-10-24" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      entrySchema.safeParse({
+        ...entry,
+        saturdaySchedules: [{ ...schedule, secondStart: "15:00" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      entrySchema.safeParse({
+        ...entry,
+        saturdaySchedules: [{ ...schedule, secondEnd: "" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      entrySchema.safeParse({
+        ...entry,
+        saturdaySchedules: [schedule, schedule],
+      }).success,
+    ).toBe(false);
+  });
   it("uses the calendar time zone for today", () => {
     expect(calendarToday(new Date("2026-10-17T03:00:00Z"))).toBe("2026-10-16");
     expect(calendarToday(new Date("2026-10-17T06:00:00Z"))).toBe("2026-10-17");

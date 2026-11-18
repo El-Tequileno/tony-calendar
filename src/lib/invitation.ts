@@ -49,9 +49,26 @@ function details(entry: Entry): Detail[] {
             "When",
             `${formatDay(entry.startDate)}${entry.endDate !== entry.startDate ? ` – ${formatDay(entry.endDate)}` : ""}`,
           ],
-          ["Start time", entry.startTime],
-          ["End time", entry.endTime],
-          ["Time zone", entry.startTime || entry.endTime ? entry.timeZone : ""],
+          [
+            entry.type === "event" && entry.saturdaySchedules.length
+              ? "Regular start time"
+              : "Start time",
+            entry.startTime,
+          ],
+          [
+            entry.type === "event" && entry.saturdaySchedules.length
+              ? "Regular end time"
+              : "End time",
+            entry.endTime,
+          ],
+          [
+            "Time zone",
+            entry.startTime ||
+            entry.endTime ||
+            (entry.type === "event" && entry.saturdaySchedules.length)
+              ? entry.timeZone
+              : "",
+          ],
           ["Province(s)", entry.provinces.map((p) => PROVINCES[p]).join(", ")],
           [
             entry.type === "distillery" ? "Previous destination city" : "City",
@@ -83,6 +100,10 @@ function details(entry: Entry): Detail[] {
       : []),
     ...(entry.type === "event"
       ? [
+          ...entry.saturdaySchedules.map((schedule) => [
+            `Saturday ${formatDay(schedule.date)} (replaces regular times)`,
+            `${schedule.firstStart}–${schedule.firstEnd}, ${schedule.secondStart}–${schedule.secondEnd}`,
+          ]),
           ["Venue name", entry.venueName],
           ["Address", entry.address || entry.location],
           ["Postal code", entry.postalCode],

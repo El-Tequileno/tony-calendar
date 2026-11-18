@@ -28,6 +28,7 @@ export async function listEntries(): Promise<Entry[]> {
   ]);
   return rows.map((row) => ({
     ...row.data,
+    saturdaySchedules: row.data.saturdaySchedules ?? [],
     participants: row.data.participants ?? [],
     airportPickup: row.data.airportPickup ?? "",
     checkInTime: row.data.checkInTime ?? "",

@@ -24,6 +24,18 @@ export const entrySchema = z
     endDate: date,
     startTime: time,
     endTime: time,
+    saturdaySchedules: z
+      .array(
+        z.object({
+          date,
+          firstStart: time,
+          firstEnd: time,
+          secondStart: time,
+          secondEnd: time,
+        }),
+      )
+      .max(50)
+      .default([]),
     timeZone: z
       .string()
       .refine((value) => {
@@ -161,6 +173,44 @@ export const entrySchema = z
         error("endTime", "End time must be after start time");
       if (!entry.provinces.length)
         error("provinces", "Select at least one province");
+      if (entry.type === "event") {
+        const seen = new Set<string>();
+        for (const schedule of entry.saturdaySchedules) {
+          if (
+            !schedule.date ||
+            schedule.date < entry.startDate ||
+            schedule.date > entry.endDate ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(schedule.date) ||
+            new Date(`${schedule.date}T12:00:00Z`).getUTCDay() !== 6
+          )
+            error(
+              "saturdaySchedules",
+              "Choose a Saturday within the event dates for each Saturday schedule",
+            );
+          if (seen.has(schedule.date))
+            error("saturdaySchedules", "Add only one schedule per Saturday");
+          seen.add(schedule.date);
+          if (
+            !schedule.firstStart ||
+            !schedule.firstEnd ||
+            !schedule.secondStart ||
+            !schedule.secondEnd
+          )
+            error(
+              "saturdaySchedules",
+              "Enter start and end times for both Saturday time slots",
+            );
+          else if (
+            schedule.firstEnd <= schedule.firstStart ||
+            schedule.secondEnd <= schedule.secondStart ||
+            schedule.secondStart < schedule.firstEnd
+          )
+            error(
+              "saturdaySchedules",
+              "Saturday time slots must be in order and must not overlap",
+            );
+        }
+      }
       if (
         entry.type === "distillery" &&
         entry.participants.some((p) => p.comments && !p.name)
@@ -222,6 +272,7 @@ export function emptyEntry(type: EntryInput["type"], day: string): EntryInput {
     endDate: day,
     startTime: "",
     endTime: "",
+    saturdaySchedules: [],
     timeZone: "America/Edmonton",
     provinces: type === "distillery" ? [] : ["AB"],
     city: "",

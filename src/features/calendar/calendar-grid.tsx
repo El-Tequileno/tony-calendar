@@ -75,7 +75,8 @@ export function CalendarGrid({
                 <small>
                   {deadline === "pre" ? "Pre-submission" : "Call back"}
                 </small>
-              ) : entry.startTime ? (
+              ) : entry.startTime &&
+                !(entry.type === "event" && entry.saturdaySchedules.length) ? (
                 <small>{entry.startTime}</small>
               ) : null}
               <span>

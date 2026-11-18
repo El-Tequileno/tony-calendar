@@ -212,6 +212,23 @@ export function EntryDetail({
             )}
           </dl>
         </Group>
+        {entry.type === "event" && entry.saturdaySchedules.length > 0 && (
+          <Group title="Saturday time slots">
+            <p className="field-hint">
+              These times replace the regular event times on each listed
+              Saturday. Times use {entry.timeZone.replaceAll("_", " ")}.
+            </p>
+            <dl>
+              {entry.saturdaySchedules.map((schedule) => (
+                <Item
+                  key={schedule.date}
+                  label={formatDay(schedule.date)}
+                  value={`${schedule.firstStart}–${schedule.firstEnd}, ${schedule.secondStart}–${schedule.secondEnd}`}
+                />
+              ))}
+            </dl>
+          </Group>
+        )}
         {entry.type === "market" && (
           <>
             <Group title="Customer meetings">

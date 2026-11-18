@@ -114,7 +114,7 @@ export function EntryList({
             <small>
               {item.deadline
                 ? `${item.deadline === "pre" ? "Pre-submission" : "Call back"} · ${item.entry.destination}`
-                : `${CATEGORIES[item.type].singular} · ${item.entry.city}${item.entry.startTime ? ` · ${item.entry.startTime} (${item.entry.timeZone})` : ""}`}
+                : `${CATEGORIES[item.type].singular} · ${item.entry.city}${item.entry.type === "event" && item.entry.saturdaySchedules.length ? " · See event times" : item.entry.startTime ? ` · ${item.entry.startTime} (${item.entry.timeZone})` : ""}`}
             </small>
           </span>
           <ArrowRight size={17} />
