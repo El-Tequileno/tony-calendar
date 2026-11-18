@@ -30,6 +30,7 @@ import { DocumentPicker } from "./document-picker";
 
 export function EntryForm({
   entry,
+  allowedCalendars,
   type,
   day,
   destinations,
@@ -38,6 +39,7 @@ export function EntryForm({
   onSaved,
 }: {
   entry?: Entry;
+  allowedCalendars: Category[];
   type: Category;
   day: string;
   destinations: string[];
@@ -317,27 +319,29 @@ export function EntryForm({
           : "Add the details everyone needs to plan the visit or event."}
       </p>
       <div className="form-type-tabs" aria-label="Entry type">
-        {Object.entries(CATEGORIES).map(([key, info]) => (
-          <button
-            type="button"
-            disabled={!!savedEntry || busy}
-            key={key}
-            className={`type-tab ${category === key ? "selected" : ""}`}
-            onClick={() => {
-              const next = key as Category;
-              setCategory(next);
-              form.reset(emptyEntry(next, day));
-              setRecipientChoice("");
-              setManualEmail("");
-              setRecipientError("");
-              setPendingFiles([]);
-              setError("");
-            }}
-          >
-            <i style={{ background: info.color }} />
-            {info.label}
-          </button>
-        ))}
+        {Object.entries(CATEGORIES)
+          .filter(([key]) => allowedCalendars.includes(key as Category))
+          .map(([key, info]) => (
+            <button
+              type="button"
+              disabled={!!savedEntry || busy}
+              key={key}
+              className={`type-tab ${category === key ? "selected" : ""}`}
+              onClick={() => {
+                const next = key as Category;
+                setCategory(next);
+                form.reset(emptyEntry(next, day));
+                setRecipientChoice("");
+                setManualEmail("");
+                setRecipientError("");
+                setPendingFiles([]);
+                setError("");
+              }}
+            >
+              <i style={{ background: info.color }} />
+              {info.label}
+            </button>
+          ))}
       </div>
       <form id="entry-form" onSubmit={submitWithManualRecipient} noValidate>
         <fieldset className="entry-fields" disabled={busy}>

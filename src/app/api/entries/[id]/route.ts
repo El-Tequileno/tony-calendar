@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { protect, endpoint, jsonBody } from "@/server/http";
+import {
+  protect,
+  endpoint,
+  jsonBody,
+  assertEntryAccess,
+  assertCalendarAccess,
+} from "@/server/http";
 import { saveEntry, deleteEntry, consumeLimit } from "@/server/repository";
 import { deleteStoredFile } from "@/server/storage";
 import { saveEntrySchema } from "@/lib/validation";
@@ -16,6 +22,8 @@ export async function PUT(
       .uuid()
       .parse((await params).id);
     const { data, revision } = saveEntrySchema.parse(await jsonBody(request));
+    await assertEntryAccess(id);
+    await assertCalendarAccess(data.type);
     return { entry: await saveEntry(data, id, revision) };
   });
 }
@@ -34,6 +42,7 @@ export async function DELETE(
       .object({ revision: z.number().int().min(1) })
       .strict()
       .parse(await jsonBody(request));
+    await assertEntryAccess(id);
     const keys = await deleteEntry(id, revision);
     const cleanup = await Promise.allSettled(
       keys.map((key) => deleteStoredFile(key)),

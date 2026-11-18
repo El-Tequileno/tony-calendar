@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { protectPersonalAction, endpoint, jsonBody } from "@/server/http";
+import {
+  protectPersonalAction,
+  endpoint,
+  jsonBody,
+  assertEntryAccess,
+} from "@/server/http";
 import { acknowledge, consumeLimit } from "@/server/repository";
 export const runtime = "nodejs";
 export async function POST(
@@ -13,6 +18,7 @@ export async function POST(
       .string()
       .uuid()
       .parse((await params).id);
+    await assertEntryAccess(id);
     const { checked } = z
       .object({ checked: z.boolean() })
       .parse(await jsonBody(request));

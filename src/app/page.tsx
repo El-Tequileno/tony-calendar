@@ -26,6 +26,7 @@ export default async function Home({
       email={person.email}
       isTony={person.isTony}
       permission={person.permission}
+      calendars={person.calendars}
       capabilities={capabilities()}
       initialEntryId={entryId}
     />

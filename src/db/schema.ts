@@ -24,6 +24,10 @@ export const authorizedEmails = pgTable(
       .$type<"read" | "write">()
       .notNull()
       .default("write"),
+    calendars: jsonb("calendars")
+      .$type<EntryInput["type"][]>()
+      .notNull()
+      .default(["market", "distillery", "event", "tender"]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

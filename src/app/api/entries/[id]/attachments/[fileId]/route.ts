@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protect } from "@/server/http";
+import { protect, assertEntryAccess } from "@/server/http";
 import { getAttachment } from "@/server/repository";
 import { readStoredFile } from "@/server/storage";
 import { AppError } from "@/server/errors";
@@ -13,6 +13,7 @@ export async function GET(
     const ids = z
       .object({ id: z.string().uuid(), fileId: z.string().uuid() })
       .parse(await params);
+    await assertEntryAccess(ids.id);
     const file = await getAttachment(ids.id, ids.fileId);
     const bytes = await readStoredFile(file.key);
     return new Response(bytes, {

@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { protect, endpoint } from "@/server/http";
-import { getEntry, consumeLimit, addAttachment } from "@/server/repository";
+import { consumeLimit, addAttachment } from "@/server/repository";
+import { assertEntryAccess } from "@/server/http";
 import { storeFile, detectFile, deleteStoredFile } from "@/server/storage";
 import { AppError } from "@/server/errors";
 import { MAX_ATTACHMENTS, MAX_UPLOAD_BYTES } from "@/lib/uploads";
@@ -17,7 +18,7 @@ export async function POST(
       .string()
       .uuid()
       .parse((await params).id);
-    const entry = await getEntry(id);
+    const entry = await assertEntryAccess(id);
     if (entry.type !== "event")
       throw new AppError("Documents belong to Events in Canada.");
     if (entry.attachments.length >= MAX_ATTACHMENTS)

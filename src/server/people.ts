@@ -40,6 +40,7 @@ export async function addPerson(input: {
   email: string;
   name: string;
   permission: Permission;
+  calendars: Person["calendars"];
 }): Promise<Person> {
   const [row] = await db()
     .insert(authorizedEmails)
@@ -55,7 +56,11 @@ export async function addPerson(input: {
 }
 export async function updatePerson(
   email: string,
-  changes: { active?: boolean; permission?: Permission },
+  changes: {
+    active?: boolean;
+    permission?: Permission;
+    calendars?: Person["calendars"];
+  },
 ): Promise<Person> {
   const [row] = await db()
     .update(authorizedEmails)

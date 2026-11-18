@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protect, endpoint } from "@/server/http";
-import { getEntry, consumeLimit } from "@/server/repository";
+import { consumeLimit } from "@/server/repository";
+import { assertEntryAccess } from "@/server/http";
 import { sendInvitations } from "@/server/email";
 export const runtime = "nodejs";
 export async function POST(
@@ -14,6 +15,6 @@ export async function POST(
       .uuid()
       .parse((await params).id);
     await consumeLimit(`email:${email}`, 5, 60 * 60 * 1000);
-    return sendInvitations(await getEntry(id), email);
+    return sendInvitations(await assertEntryAccess(id), email);
   });
 }

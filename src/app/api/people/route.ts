@@ -27,6 +27,7 @@ export async function PATCH(request: Request) {
       person: await updatePerson(input.email, {
         active: input.active,
         permission: input.permission,
+        calendars: input.calendars,
       }),
     };
   });

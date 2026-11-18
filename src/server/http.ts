@@ -2,6 +2,18 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { currentPerson } from "./session";
 import { AppError } from "./errors";
+import { getEntry } from "./repository";
+import type { Category } from "@/lib/constants";
+export async function assertCalendarAccess(type: Category) {
+  const person = await currentPerson();
+  if (!person || (!person.isTony && !person.calendars.includes(type)))
+    throw new AppError("You do not have access to this calendar.", 403);
+}
+export async function assertEntryAccess(id: string) {
+  const entry = await getEntry(id);
+  await assertCalendarAccess(entry.type);
+  return entry;
+}
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   const expected = process.env.APP_URL

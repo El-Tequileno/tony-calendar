@@ -22,6 +22,13 @@
       "when": 1792790306426,
       "tag": "0002_thankful_ares",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795018030666,
+      "tag": "0003_parched_captain_britain",
+      "breakpoints": true
     }
   ]
 }

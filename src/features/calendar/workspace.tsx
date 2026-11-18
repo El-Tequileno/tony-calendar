@@ -40,12 +40,14 @@ export function Workspace({
   email,
   isTony,
   permission,
+  calendars,
   capabilities,
   initialEntryId,
 }: {
   email: string;
   isTony: boolean;
   permission: Permission;
+  calendars: Category[];
   capabilities: Capabilities;
   initialEntryId?: string;
 }) {
@@ -63,6 +65,8 @@ export function Workspace({
   const [menu, setMenu] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [canWrite, setCanWrite] = useState(isTony || permission === "write");
+  const [allowedCalendars, setAllowedCalendars] =
+    useState<Category[]>(calendars);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -79,6 +83,7 @@ export function Workspace({
         const writable =
           session.person.isTony || session.person.permission === "write";
         setCanWrite(writable);
+        setAllowedCalendars(session.person.calendars);
         if (!writable) setForm(null);
         setEntries(result.entries);
         setError("");
@@ -220,17 +225,21 @@ export function Workspace({
             <span>All calendar</span>
             <small>{entries.length}</small>
           </button>
-          {Object.entries(CATEGORIES).map(([key, info]) => (
-            <button
-              key={key}
-              className={!peopleOpen && category === key ? "active" : ""}
-              onClick={() => chooseCategory(key as Category)}
-            >
-              <i style={{ background: info.color }} />
-              <span>{info.label}</span>
-              <small>{entries.filter((e) => e.type === key).length}</small>
-            </button>
-          ))}
+          {Object.entries(CATEGORIES)
+            .filter(
+              ([key]) => isTony || allowedCalendars.includes(key as Category),
+            )
+            .map(([key, info]) => (
+              <button
+                key={key}
+                className={!peopleOpen && category === key ? "active" : ""}
+                onClick={() => chooseCategory(key as Category)}
+              >
+                <i style={{ background: info.color }} />
+                <span>{info.label}</span>
+                <small>{entries.filter((e) => e.type === key).length}</small>
+              </button>
+            ))}
           {isTony && (
             <button
               className={`people-nav ${peopleOpen ? "active" : ""}`}
@@ -315,10 +324,19 @@ export function Workspace({
                 </div>
                 {canWrite && (
                   <Button
-                    disabled={loading || !!error}
+                    disabled={
+                      loading ||
+                      !!error ||
+                      (!isTony && !allowedCalendars.length)
+                    }
                     onClick={() =>
                       setForm({
-                        type: category === "all" ? "market" : category,
+                        type:
+                          category === "all"
+                            ? isTony
+                              ? "market"
+                              : allowedCalendars[0]
+                            : category,
                         day: anchor,
                       })
                     }
@@ -332,7 +350,11 @@ export function Workspace({
                 className={`summary-row ${category !== "all" ? "single" : ""}`}
               >
                 {Object.entries(CATEGORIES)
-                  .filter(([key]) => category === "all" || key === category)
+                  .filter(
+                    ([key]) =>
+                      (isTony || allowedCalendars.includes(key as Category)) &&
+                      (category === "all" || key === category),
+                  )
                   .map(([key, info]) => (
                     <div className="summary-card" key={key}>
                       <span
@@ -479,7 +501,12 @@ export function Workspace({
                     </>
                   ) : (
                     Object.entries(CATEGORIES)
-                      .filter(([key]) => category === "all" || key === category)
+                      .filter(
+                        ([key]) =>
+                          (isTony ||
+                            allowedCalendars.includes(key as Category)) &&
+                          (category === "all" || key === category),
+                      )
                       .map(([key, info]) => (
                         <span key={key}>
                           <i style={{ background: info.color }} />
@@ -511,10 +538,15 @@ export function Workspace({
                     view={view}
                     onOpen={(entry) => setSelected(entry.id)}
                     onAdd={
-                      canWrite
+                      canWrite && (isTony || allowedCalendars.length > 0)
                         ? (day) => {
                             setForm({
-                              type: category === "all" ? "market" : category,
+                              type:
+                                category === "all"
+                                  ? isTony
+                                    ? "market"
+                                    : allowedCalendars[0]
+                                  : category,
                               day,
                             });
                           }
@@ -544,6 +576,9 @@ export function Workspace({
         <EntryForm
           key={form.entry?.id || `${form.type}-${form.day}`}
           entry={form.entry}
+          allowedCalendars={
+            isTony ? (Object.keys(CATEGORIES) as Category[]) : allowedCalendars
+          }
           type={form.type}
           day={form.day}
           destinations={destinations}

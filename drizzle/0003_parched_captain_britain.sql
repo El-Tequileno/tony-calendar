@@ -1,0 +1,1 @@
+ALTER TABLE "authorized_emails" ADD COLUMN "calendars" jsonb DEFAULT '["market","distillery","event","tender"]'::jsonb NOT NULL;

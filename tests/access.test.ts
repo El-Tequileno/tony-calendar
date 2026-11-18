@@ -30,6 +30,7 @@ const person: Person = {
   active: true,
   isTony: false,
   permission: "write",
+  calendars: ["market", "distillery", "event", "tender"],
   createdAt: new Date(0).toISOString(),
 };
 function request(
@@ -97,6 +98,7 @@ describe("People authorization", () => {
       email: person.email,
       name: "Person",
       permission: "read",
+      calendars: person.calendars,
     });
     expect(
       (await PATCH(request("PATCH", { email: person.email, active: false })))
@@ -112,6 +114,7 @@ describe("People authorization", () => {
     expect(mocks.updatePerson).toHaveBeenCalledWith(person.email, {
       active: undefined,
       permission: "read",
+      calendars: undefined,
     });
     expect(
       (
@@ -132,6 +135,7 @@ describe("People validation", () => {
       email: person.email,
       name: "",
       permission: "write",
+      calendars: person.calendars,
     });
     expect(
       addPersonSchema.safeParse({ email: person.email, isTony: true }).success,

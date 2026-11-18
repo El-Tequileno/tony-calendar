@@ -4,7 +4,51 @@ import { UserPlus, ShieldCheck, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api, RequestError } from "@/lib/api";
 import type { Person, Permission } from "@/lib/people";
+import { ALL_CALENDARS } from "@/lib/people";
+import { CATEGORIES, type Category } from "@/lib/constants";
 import { useRouter } from "next/navigation";
+function CalendarChecks({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: Category[];
+  onChange: (value: Category[]) => void;
+  disabled?: boolean;
+}) {
+  const all = ALL_CALENDARS.every((category) => value.includes(category));
+  return (
+    <fieldset disabled={disabled}>
+      <legend>Calendars</legend>
+      <label>
+        <input
+          type="checkbox"
+          checked={all}
+          onChange={(event) =>
+            onChange(event.target.checked ? [...ALL_CALENDARS] : [])
+          }
+        />{" "}
+        All calendars
+      </label>
+      {ALL_CALENDARS.map((category) => (
+        <label key={category} style={{ display: "block" }}>
+          <input
+            type="checkbox"
+            checked={value.includes(category)}
+            onChange={(event) =>
+              onChange(
+                event.target.checked
+                  ? [...value, category]
+                  : value.filter((item) => item !== category),
+              )
+            }
+          />{" "}
+          {CATEGORIES[category].label}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 export function PeopleSection({
   onMessage,
 }: {
@@ -18,6 +62,29 @@ export function PeopleSection({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<Permission>("write");
+  const [calendars, setCalendars] = useState<Category[]>([...ALL_CALENDARS]);
+  async function changeCalendars(person: Person, calendars: Category[]) {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ person: Person }>("/api/people", {
+        method: "PATCH",
+        body: JSON.stringify({ email: person.email, calendars }),
+      });
+      setPeople((list) =>
+        list.map((p) => (p.email === person.email ? result.person : p)),
+      );
+      onMessage("Calendar access updated.");
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to update calendar access.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -120,12 +187,13 @@ export function PeopleSection({
               try {
                 const result = await api<{ person: Person }>("/api/people", {
                   method: "POST",
-                  body: JSON.stringify({ name, email, permission }),
+                  body: JSON.stringify({ name, email, permission, calendars }),
                 });
                 setPeople((list) => [...list, result.person]);
                 setName("");
                 setEmail("");
                 setPermission("write");
+                setCalendars([...ALL_CALENDARS]);
                 onMessage(
                   "Person added. Their email can now access the calendar.",
                 );
@@ -178,6 +246,11 @@ export function PeopleSection({
                 entries, upload files, and send invitations.
               </small>
             </label>
+            <CalendarChecks
+              value={calendars}
+              onChange={setCalendars}
+              disabled={busy}
+            />
             <Button type="submit" disabled={busy || loading}>
               <UserPlus size={15} />
               {busy ? "Saving…" : "Add person"}
@@ -223,6 +296,11 @@ export function PeopleSection({
                     </span>
                   ) : (
                     <>
+                      <CalendarChecks
+                        value={person.calendars}
+                        onChange={(value) => changeCalendars(person, value)}
+                        disabled={busy}
+                      />
                       <label className="field person-permission">
                         <span>Permission</span>
                         <select

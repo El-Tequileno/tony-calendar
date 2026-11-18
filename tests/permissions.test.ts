@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ currentPerson: vi.fn() }));
 vi.mock("@/server/session", () => ({ currentPerson: mocks.currentPerson }));
-import { protect, protectPersonalAction } from "../src/server/http";
+import {
+  protect,
+  protectPersonalAction,
+  assertCalendarAccess,
+} from "../src/server/http";
 
 const request = (origin = "http://localhost:3000") =>
   new Request("http://localhost:3000/api/entries", {
@@ -16,6 +20,18 @@ beforeEach(() => {
 });
 
 describe("calendar permissions", () => {
+  it("enforces assigned calendars and grants Tony access to all", async () => {
+    mocks.currentPerson.mockResolvedValue({
+      isTony: false,
+      calendars: ["event"],
+    });
+    await expect(assertCalendarAccess("event")).resolves.toBeUndefined();
+    await expect(assertCalendarAccess("market")).rejects.toMatchObject({
+      status: 403,
+    });
+    mocks.currentPerson.mockResolvedValue({ isTony: true, calendars: [] });
+    await expect(assertCalendarAccess("market")).resolves.toBeUndefined();
+  });
   it("lets read-only people view and acknowledge, but rejects calendar writes", async () => {
     mocks.currentPerson.mockResolvedValue({
       email: "reader@example.com",

@@ -3,6 +3,7 @@ import { AppError } from "../src/server/errors";
 const mocks = vi.hoisted(() => ({
   currentPerson: vi.fn(),
   deleteEntry: vi.fn(),
+  getEntry: vi.fn(),
   consumeLimit: vi.fn(),
   deleteStoredFile: vi.fn(),
 }));
@@ -11,6 +12,7 @@ vi.mock("@/server/session", () => ({
 }));
 vi.mock("@/server/repository", () => ({
   deleteEntry: mocks.deleteEntry,
+  getEntry: mocks.getEntry,
   consumeLimit: mocks.consumeLimit,
   saveEntry: vi.fn(),
 }));
@@ -37,10 +39,17 @@ beforeEach(() => {
     email: "person@example.com",
     isTony: false,
     permission: "write",
+    calendars: ["event"],
   });
+  mocks.getEntry.mockResolvedValue({ type: "event" });
   mocks.deleteEntry.mockResolvedValue([]);
 });
 describe("entry deletion", () => {
+  it("rejects deletion outside the user's assigned calendars", async () => {
+    mocks.getEntry.mockResolvedValue({ type: "market" });
+    expect((await DELETE(request(), context)).status).toBe(403);
+    expect(mocks.deleteEntry).not.toHaveBeenCalled();
+  });
   it("requires an active session and the correct origin", async () => {
     mocks.currentPerson.mockResolvedValue(null);
     expect((await DELETE(request(), context)).status).toBe(401);
